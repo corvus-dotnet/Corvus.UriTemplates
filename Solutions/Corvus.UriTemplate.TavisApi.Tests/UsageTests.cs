@@ -1,12 +1,54 @@
 ﻿using System;
 using System.Collections.Generic;
+using Corvus.UriTemplates;
 using Corvus.UriTemplates.TavisApi;
 using Xunit;
 
 namespace UriTemplateTests
 {
     public class UsageTests
-    {       
+    {
+        [Fact]
+        public void ShouldRetrieveParameters()
+        {
+            var state = ParameterCache.Rent(5);
+            IUriTemplateParser corvusTemplate = UriTemplateParserFactory.CreateParser("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId={parentRequestId}{&hash,callback}");
+
+            corvusTemplate!.ParseUri("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=123232323&hash=23ADE34FAE&callback=http%3A%2F%2Fexample.com%2Fcallback", ParameterCache.HandleParameters, ref state);
+
+            int count = 0;
+
+            state.EnumerateParameters(Callback);
+
+            Assert.Equal(3, count);
+
+            state.Return();
+
+            void Callback(ReadOnlySpan<char> name, ReadOnlySpan<char> value)
+            {
+                if (name.SequenceEqual("parentRequestId"))
+                {
+                    Assert.True(value.SequenceEqual("123232323"), $"parentRequestId was {value}");
+                    count++;
+                }
+                else if (name.SequenceEqual("hash"))
+                {
+                    Assert.True(value.SequenceEqual("23ADE34FAE"), $"hash was {value}");
+                    count++;
+                }
+                else if (name.SequenceEqual("callback"))
+                {
+                    Assert.True(value.SequenceEqual("http%3A%2F%2Fexample.com%2Fcallback"), $"callback was {value}");
+                    count++;
+                }
+                else
+                {
+                    Assert.True(false, $"Unexpected parameter: (name: '{name}', value: '{value}')");
+                }
+            }
+        }
+
+
         [Fact]
         public void ShouldAllowUriTemplateWithPathSegmentParameter()
         {
@@ -37,7 +79,7 @@ namespace UriTemplateTests
             template.SetParameter("bar", "yo");
             template.SetParameter("lat", lat);
             template.SetParameter("lng", lng);
-            
+
             var uriString = template.Resolve();
             Assert.Equal("http://example.org/foo/yo/baz?lat=31.464&lng=74.386", uriString);
         }
@@ -89,8 +131,8 @@ namespace UriTemplateTests
             var uriString = template.Resolve();
             Assert.Equal("http://example.org/foo?baz=yuck", uriString);
         }
-        
-        
+
+
         [Fact]
         public void ShouldAllowUriTemplateWithQueryParamsWithOneValue()
         {
@@ -117,7 +159,7 @@ namespace UriTemplateTests
             var template = new UriTemplate("http://example.org/customers{?query*}");
             template.SetParameter("query", new Dictionary<string, string>()
             {
-                {"active","true"}, 
+                {"active","true"},
                 {"Country","Brazil"}
             });
             var uriString = template.Resolve();
@@ -198,7 +240,7 @@ namespace UriTemplateTests
         {
             UriTemplate template = new UriTemplate("/foo/{foo}/baz{?haz*}");
             template.SetParameter("foo", "1234");
-            template.SetParameter("haz", new string[] { "foo","bar" });
+            template.SetParameter("haz", new string[] { "foo", "bar" });
 
             string uri = template.Resolve();
 
@@ -222,11 +264,11 @@ namespace UriTemplateTests
         {
             UriTemplate template = new UriTemplate("/foo/{foo}/baz{?haz*}");
             template.SetParameter("foo", "1234");
-            template.SetParameter("haz", new string[] {});
+            template.SetParameter("haz", new string[] { });
 
             string uri = template.Resolve();
 
-            Assert.Equal("/foo/1234/baz",uri);
+            Assert.Equal("/foo/1234/baz", uri);
         }
 
         [Fact]
@@ -246,14 +288,14 @@ namespace UriTemplateTests
         {
             UriTemplate template = new UriTemplate("https://foo.com/{?format}");
             template.SetParameter("format", "application/vnd.foo+xml");
-            
+
             var result = template.Resolve();
 
-            Assert.Equal("https://foo.com/?format=application%2Fvnd.foo%2Bxml",result);
-            
+            Assert.Equal("https://foo.com/?format=application%2Fvnd.foo%2Bxml", result);
+
         }
 
-        [Fact(Skip = "Unit tests should not require internet access!!")] 
+        [Fact(Skip = "Unit tests should not require internet access!!")]
         public void PreserveReservedCharacterExpansion()
         {
             UriTemplate template = new UriTemplate("https://foo.com/?format={+format}");
@@ -262,7 +304,7 @@ namespace UriTemplateTests
             var result = template.Resolve();
 
             Assert.Equal("https://foo.com/?format=application/vnd.foo+xml", result);
-            
+
         }
 
         [Fact]
@@ -272,7 +314,7 @@ namespace UriTemplateTests
             template.SetParameter("Stra%C3%9Fe", "Grüner Weg");
 
             var result = template.Resolve();
-            
+
 
             Assert.Equal("/lookup?Stra%C3%9Fe=Gr%C3%BCner%20Weg", result);
 
@@ -314,7 +356,7 @@ namespace UriTemplateTests
         {
 
             var url = new UriTemplate("/1/search/auto/{folder}{?query}")
-                .AddParameter("folder","My Documents")
+                .AddParameter("folder", "My Documents")
                 .AddParameter("query", "draft 2013")
                 .Resolve();
 
@@ -342,7 +384,7 @@ namespace UriTemplateTests
 
             // If you truly want to make multiple path segments then do this
             var url3 = new UriTemplate("{/greeting*}")
-                .AddParameter("greeting", new List<string> {"hello","world"})
+                .AddParameter("greeting", new List<string> { "hello", "world" })
                 .Resolve();
 
             Assert.Equal("/hello/world", url3);
@@ -362,7 +404,7 @@ namespace UriTemplateTests
             // There are different ways that lists can be included in query params
             // Just as a comma delimited list
             var url = new UriTemplate("/docs/salary.csv{?columns}")
-                .AddParameter("columns", new List<int> {1,2})
+                .AddParameter("columns", new List<int> { 1, 2 })
                 .Resolve();
 
             Assert.Equal("/docs/salary.csv?columns=1,2", url);
@@ -379,7 +421,7 @@ namespace UriTemplateTests
         public void EncodingTest4()
         {
             var url = new UriTemplate("/emails{?params*}")
-                .AddParameter("params", new Dictionary<string,string>
+                .AddParameter("params", new Dictionary<string, string>
                 {
                     {"from[name]","Don"},
                     {"from[date]","1998-03-24"},
@@ -410,13 +452,14 @@ namespace UriTemplateTests
             try
             {
                 var url = new UriTemplate("/feeds/events{? fromId").Resolve();
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 ex = e;
             }
             Assert.NotNull(ex);
         }
 
-        
+
     }
 }

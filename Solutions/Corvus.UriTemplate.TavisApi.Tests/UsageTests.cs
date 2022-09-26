@@ -48,6 +48,46 @@ namespace UriTemplateTests
             }
         }
 
+        [Fact]
+        public void ShouldRetrieveParametersWhenReallocationIsRequired()
+        {
+            var state = ParameterCache.Rent(1);
+            IUriTemplateParser corvusTemplate = UriTemplateParserFactory.CreateParser("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId={parentRequestId}{&hash,callback}");
+
+            corvusTemplate!.ParseUri("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=123232323&hash=23ADE34FAE&callback=http%3A%2F%2Fexample.com%2Fcallback", ParameterCache.HandleParameters, ref state);
+
+            int count = 0;
+
+            state.EnumerateParameters(Callback);
+
+            Assert.Equal(3, count);
+
+            state.Return();
+
+            void Callback(ReadOnlySpan<char> name, ReadOnlySpan<char> value)
+            {
+                if (name.SequenceEqual("parentRequestId"))
+                {
+                    Assert.True(value.SequenceEqual("123232323"), $"parentRequestId was {value}");
+                    count++;
+                }
+                else if (name.SequenceEqual("hash"))
+                {
+                    Assert.True(value.SequenceEqual("23ADE34FAE"), $"hash was {value}");
+                    count++;
+                }
+                else if (name.SequenceEqual("callback"))
+                {
+                    Assert.True(value.SequenceEqual("http%3A%2F%2Fexample.com%2Fcallback"), $"callback was {value}");
+                    count++;
+                }
+                else
+                {
+                    Assert.True(false, $"Unexpected parameter: (name: '{name}', value: '{value}')");
+                }
+            }
+        }
+
 
         [Fact]
         public void ShouldAllowUriTemplateWithPathSegmentParameter()

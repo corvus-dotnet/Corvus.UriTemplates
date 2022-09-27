@@ -5,7 +5,7 @@
 // Derived from Tavis.UriTemplate https://github.com/tavis-software/Tavis.UriTemplates/blob/master/License.txt
 // </licensing>
 
-using System.Collections.Immutable;
+using System.Data.Common;
 
 namespace Corvus.UriTemplates.TavisApi;
 
@@ -208,22 +208,43 @@ public class UriTemplate
 
                     IDictionary<string, object?> pathParameters = this.GetParameters(uriWithoutQuery) ?? new Dictionary<string, object?>(this.parameters.Comparer);
 
-                    IEnumerable<string> parameterNames = this.GetParameterNames();
-                    foreach (KeyValuePair<string, object?> parameter in uri.GetQueryStringParameters())
-                    {
-                        if (!parameterNames.Contains(parameter.Key))
-                        {
-                            continue;
-                        }
+                    HashSet<string> parameterNames = this.GetParameterNamesHashSet();
 
-                        pathParameters.Add(parameter.Key, parameter.Value);
-                    }
+                    (HashSet<string> ParameterNames, IDictionary<string, object?> PathParameters) parameterState = (parameterNames, pathParameters);
+
+                    uri.GetQueryStringParameters(MatchParameterNames, ref parameterState);
 
                     return pathParameters.Count == 0 ? null : pathParameters;
                 }
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(order), order, null);
+        }
+
+        static void MatchParameterNames(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref (HashSet<string> ParameterNames, IDictionary<string, object?> PathParameters) state)
+        {
+            string name1 = name.ToString();
+            if (state.ParameterNames.Contains(name1))
+            {
+                state.PathParameters.Add(name1, value.ToString());
+            }
+        }
+    }
+
+    /// <summary>
+    /// Get the names of the parameters in the template.
+    /// </summary>
+    /// <returns>The parameters in the template.</returns>
+    internal HashSet<string> GetParameterNamesHashSet()
+    {
+        HashSet<string> builder = new();
+
+        DictionaryUriTemplateResolver.TryGetParameterNames(this.template.AsSpan(), AccumulateParameterNames, ref builder);
+        return builder;
+
+        static void AccumulateParameterNames(ReadOnlySpan<char> name, ref HashSet<string> state)
+        {
+            state.Add(name.ToString());
         }
     }
 }

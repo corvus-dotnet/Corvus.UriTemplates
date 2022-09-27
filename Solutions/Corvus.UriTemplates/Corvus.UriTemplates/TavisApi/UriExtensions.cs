@@ -5,16 +5,31 @@
 // Derived from Tavis.UriTemplate https://github.com/tavis-software/Tavis.UriTemplates/blob/master/License.txt
 // </licensing>
 
+using System.Buffers;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace Corvus.UriTemplates.TavisApi;
+
+/// <summary>
+/// A delegate for recieving query string parameters.
+/// </summary>
+/// <typeparam name="TState">The type of the state for the callback.</typeparam>
+/// <param name="name">The name of the parameter.</param>
+/// <param name="value">The value of the parameter.</param>
+/// <param name="state">The state for the callback.</param>
+public delegate void QueryStringParameterCallback<TState>(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref TState state);
 
 /// <summary>
 /// Extension methods for converting a URI into a URI template.
 /// </summary>
 public static partial class UriExtensions
 {
-    private static readonly Regex UnreservedCharacters = UnreservedCharacterMatcher();
+    private enum State
+    {
+        LookingForName,
+        LookingForValue,
+    }
 
     /// <summary>
     /// Make a template from a URI, by templatizing the existing query string parameters.
@@ -54,27 +69,121 @@ public static partial class UriExtensions
     /// <returns>A map of the query string parameters.</returns>
     public static Dictionary<string, object?> GetQueryStringParameters(this Uri target)
     {
-        Uri uri = target;
-        var parameters = new Dictionary<string, object?>();
+        Dictionary<string, object?> parameters = new();
 
-        foreach (Match m in UnreservedCharacters.Matches(uri.Query))
-        {
-            string key = m.Groups[1].Value.ToLowerInvariant();
-            string value = m.Groups[2].Value;
-            parameters.Add(key, value);
-        }
+        GetQueryStringParameters(target, AccumulateResults, ref parameters);
 
         return parameters;
+
+        static void AccumulateResults(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref Dictionary<string, object?> state)
+        {
+            state.Add(name.ToString(), value.ToString());
+        }
     }
 
-#if NETSTANDARD2_1
-    private static Regex UnreservedCharacterMatcher()
+    /// <summary>
+    /// Get the query string parameters from the given URI.
+    /// </summary>
+    /// <typeparam name="TState">The type of the state for the callback.</typeparam>
+    /// <param name="target">The target URI for which to recover the query string parameters.</param>
+    /// <param name="callback">The callback to receieve the query parameters.</param>
+    /// <param name="state">The state for the callback.</param>
+    public static void GetQueryStringParameters<TState>(this Uri target, QueryStringParameterCallback<TState> callback, ref TState state)
     {
-        return new Regex("([-A-Za-z0-9._~]*)=([^&]*)&?", RegexOptions.Compiled, TimeSpan.FromSeconds(2));
+        MatchQueryParameters(target.Query, callback, ref state);
     }
-#else
-    // Unreserved characters: http://tools.ietf.org/html/rfc3986#section-2.3
-    [GeneratedRegex("([-A-Za-z0-9._~]*)=([^&]*)&?")]
-    private static partial Regex UnreservedCharacterMatcher();
-#endif
+
+    private static bool MatchQueryParameters<TState>(ReadOnlySpan<char> query, QueryStringParameterCallback<TState> callback, ref TState state)
+    {
+        // Skip the initial '?'
+        int currentIndex = 1;
+        State currentState = State.LookingForName;
+        int nameSegmentStart = 1;
+        int nameSegmentEnd = 1;
+        int valueSegmentStart = -1;
+
+        while (currentIndex < query.Length)
+        {
+            switch (currentState)
+            {
+                case State.LookingForName:
+                    if (query[currentIndex] == '=')
+                    {
+                        nameSegmentEnd = currentIndex;
+                        valueSegmentStart = currentIndex + 1;
+                        currentState = State.LookingForValue;
+
+                        // That's an empty name
+                        if (nameSegmentStart >= nameSegmentEnd)
+                        {
+                            return false;
+                        }
+                    }
+                    else if (!IsPermittedValueCharacter(query[currentIndex]))
+                    {
+                        return false;
+                    }
+
+                    break;
+
+                case State.LookingForValue:
+                    if (query[currentIndex] == '&')
+                    {
+                        ReadOnlySpan<char> name = query[nameSegmentStart..nameSegmentEnd];
+                        ReadOnlySpan<char> value = valueSegmentStart == currentIndex ? ReadOnlySpan<char>.Empty : query[valueSegmentStart..currentIndex];
+
+                        ExecuteCallback(callback, name, value, ref state);
+
+                        currentState = State.LookingForName;
+                        nameSegmentStart = currentIndex + 1;
+                    }
+
+                    break;
+            }
+
+            ++currentIndex;
+        }
+
+        if (currentState == State.LookingForValue)
+        {
+            ExecuteCallback(callback, query[nameSegmentStart..nameSegmentEnd], query[valueSegmentStart..currentIndex], ref state);
+        }
+
+        return true;
+
+        static void ExecuteCallback(QueryStringParameterCallback<TState> callback, ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref TState state)
+        {
+            char[]? pooledArray = null;
+
+            Span<char> lowerName = name.Length <= 256 ?
+                stackalloc char[256] :
+                (pooledArray = ArrayPool<char>.Shared.Rent(name.Length));
+
+            try
+            {
+                name.ToLowerInvariant(lowerName);
+                callback(lowerName[..name.Length], value, ref state);
+            }
+            finally
+            {
+                if (pooledArray is not null)
+                {
+                    lowerName.Clear();
+                    ArrayPool<char>.Shared.Return(pooledArray);
+                }
+            }
+        }
+    }
+
+    private static bool IsPermittedValueCharacter(char v)
+    {
+        return
+            v == '-' ||
+            (v >= 'A' && v <= 'Z') ||
+            (v >= 'a' && v <= 'z') ||
+            (v >= '0' && v <= '9') ||
+            v == '.' ||
+            v == '_' ||
+            v == '~';
+    }
 }

@@ -4,9 +4,9 @@
 
 using System.Buffers;
 using System.Runtime.CompilerServices;
-using Corvus.Json;
+using System.Text.Json;
 
-namespace Corvus.UriTemplates.Benchmarking;
+namespace Corvus.UriTemplates;
 
 /// <summary>
 /// A wrapper around <see cref="UriTemplateResolver{TParameterProvider, TParameterPayload}"/>
@@ -14,6 +14,10 @@ namespace Corvus.UriTemplates.Benchmarking;
 /// </summary>
 public static class JsonUriTemplateResolver
 {
+#if NET6_0
+    private static readonly JsonTemplateParameterProvider ParameterProvider = new();
+#endif
+
     /// <summary>
     /// Resolve the template into an output result.
     /// </summary>
@@ -26,9 +30,13 @@ public static class JsonUriTemplateResolver
     /// <param name="state">The state passed to the callback(s).</param>
     /// <returns><see langword="true"/> if the URI matched the template, and the parameters were resolved successfully.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryResolveResult<TState>(ReadOnlySpan<char> template, bool resolvePartially, in JsonAny parameters, ParameterNameCallback<TState>? parameterNameCallback, ResolvedUriTemplateCallback<TState> callback, ref TState state)
+    public static bool TryResolveResult<TState>(ReadOnlySpan<char> template, bool resolvePartially, in JsonElement parameters, ParameterNameCallback<TState>? parameterNameCallback, ResolvedUriTemplateCallback<TState> callback, ref TState state)
     {
-        return UriTemplateResolver<JsonTemplateParameterProvider, JsonAny>.TryResolveResult(template, resolvePartially, parameters, callback, parameterNameCallback, ref state);
+#if NET6_0
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(ParameterProvider, template, resolvePartially, parameters, callback, parameterNameCallback, ref state);
+#else
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(template, resolvePartially, parameters, callback, parameterNameCallback, ref state);
+#endif
     }
 
     /// <summary>
@@ -42,9 +50,13 @@ public static class JsonUriTemplateResolver
     /// <param name="state">The state passed to the callback(s).</param>
     /// <returns><see langword="true"/> if the URI matched the template, and the parameters were resolved successfully.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryResolveResult<TState>(ReadOnlySpan<char> template, bool resolvePartially, in JsonAny parameters, ResolvedUriTemplateCallback<TState> callback, ref TState state)
+    public static bool TryResolveResult<TState>(ReadOnlySpan<char> template, bool resolvePartially, in JsonElement parameters, ResolvedUriTemplateCallback<TState> callback, ref TState state)
     {
-        return UriTemplateResolver<JsonTemplateParameterProvider, JsonAny>.TryResolveResult(template, resolvePartially, parameters, callback, null, ref state);
+#if NET6_0
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(ParameterProvider, template, resolvePartially, parameters, callback, null, ref state);
+#else
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(template, resolvePartially, parameters, callback, null, ref state);
+#endif
     }
 
     /// <summary>
@@ -56,10 +68,14 @@ public static class JsonUriTemplateResolver
     /// <param name="parameters">The parameters to apply to the template.</param>
     /// <returns><see langword="true"/> if the URI matched the template, and the parameters were resolved successfully.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryResolveResult(ReadOnlySpan<char> template, IBufferWriter<char> output, bool resolvePartially, in JsonAny parameters)
+    public static bool TryResolveResult(ReadOnlySpan<char> template, IBufferWriter<char> output, bool resolvePartially, in JsonElement parameters)
     {
         object? nullState = default;
-        return UriTemplateResolver<JsonTemplateParameterProvider, JsonAny>.TryResolveResult(template, output, resolvePartially, parameters, null, ref nullState);
+#if NET6_0
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(ParameterProvider, template, output, resolvePartially, parameters, null, ref nullState);
+#else
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(template, output, resolvePartially, parameters, null, ref nullState);
+#endif
     }
 
     /// <summary>
@@ -73,7 +89,11 @@ public static class JsonUriTemplateResolver
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryGetParameterNames<TState>(ReadOnlySpan<char> template, ParameterNameCallback<TState> callback, ref TState state)
     {
-        return UriTemplateResolver<JsonTemplateParameterProvider, JsonAny>.TryResolveResult(template, true, JsonAny.Null, Nop, callback, ref state);
+#if NET6_0
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(ParameterProvider, template, true, default, Nop, callback, ref state);
+#else
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(template, true, default, Nop, callback, ref state);
+#endif
 
         static void Nop(ReadOnlySpan<char> value, ref TState state)
         {

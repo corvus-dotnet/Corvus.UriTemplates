@@ -5,15 +5,14 @@
 using System.Buffers;
 using System.Text.Json;
 using CommunityToolkit.HighPerformance;
-using Corvus.Json;
 using Corvus.UriTemplates.TemplateParameterProviders;
 
-namespace Corvus.UriTemplates.Benchmarking;
+namespace Corvus.UriTemplates;
 
 /// <summary>
 /// Implements a parameter provider over a JsonAny.
 /// </summary>
-internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAny>
+internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonElement>
 {
     /// <summary>
     /// Process the given variable.
@@ -25,12 +24,16 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAn
     ///     <see cref="VariableProcessingState.Success"/> if the variable was successfully processed,
     ///     <see cref="VariableProcessingState.NotProcessed"/> if the parameter was not present, or
     ///     <see cref="VariableProcessingState.Failure"/> if the parmeter could not be processed because it was incompatible with the variable specification in the template.</returns>
-    public static VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in JsonAny parameters, IBufferWriter<char> output)
+#if NET6_0
+    public VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in JsonElement parameters, IBufferWriter<char> output)
+#else
+    public static VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in JsonElement parameters, IBufferWriter<char> output)
+#endif
     {
-        if (!parameters.TryGetProperty(variableSpecification.VarName, out JsonAny value)
-                || value.IsNullOrUndefined()
+        if (!parameters.TryGetProperty(variableSpecification.VarName, out JsonElement value)
+                || IsNullOrUndefined(value)
                 || (value.ValueKind == JsonValueKind.Array && value.GetArrayLength() == 0)
-                || (value.ValueKind == JsonValueKind.Object && !value.HasProperties()))
+                || (value.ValueKind == JsonValueKind.Object && !HasProperties(value)))
         {
             return VariableProcessingState.NotProcessed;
         }
@@ -65,7 +68,7 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAn
 
             if (variableSpecification.OperatorInfo.Named && !variableSpecification.Explode) //// exploding will prefix with list name
             {
-                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, !value.HasProperties());
+                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, !HasProperties(value));
             }
 
             AppendObject(output, variableSpecification.OperatorInfo, variableSpecification.Explode, value);
@@ -85,13 +88,26 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAn
         {
             if (variableSpecification.OperatorInfo.Named)
             {
-                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, value.IsNullOrUndefined());
+                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, IsNullOrUndefined(value));
             }
 
             AppendValue(output, value, variableSpecification.PrefixLength, variableSpecification.OperatorInfo.AllowReserved);
         }
 
         return VariableProcessingState.Success;
+    }
+
+    private static bool IsNullOrUndefined(JsonElement value)
+    {
+        return
+            value.ValueKind == JsonValueKind.Undefined ||
+            value.ValueKind == JsonValueKind.Null;
+    }
+
+    private static bool HasProperties(JsonElement value)
+    {
+        using JsonElement.ObjectEnumerator enumerator = value.EnumerateObject();
+        return enumerator.MoveNext();
     }
 
     /// <summary>
@@ -102,10 +118,10 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAn
     /// <param name="explode">Whether to explode the array.</param>
     /// <param name="variable">The variable name.</param>
     /// <param name="array">The array to add.</param>
-    private static void AppendArray(IBufferWriter<char> output, in OperatorInfo op, bool explode, ReadOnlySpan<char> variable, in JsonAny array)
+    private static void AppendArray(IBufferWriter<char> output, in OperatorInfo op, bool explode, ReadOnlySpan<char> variable, in JsonElement array)
     {
         bool isFirst = true;
-        foreach (JsonAny item in array.EnumerateArray())
+        foreach (JsonElement item in array.EnumerateArray())
         {
             if (!isFirst)
             {
@@ -133,10 +149,10 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAn
     /// <param name="op">The operator info.</param>
     /// <param name="explode">Whether to explode the object.</param>
     /// <param name="instance">The object instance to append.</param>
-    private static void AppendObject(IBufferWriter<char> output, in OperatorInfo op, bool explode, in JsonAny instance)
+    private static void AppendObject(IBufferWriter<char> output, in OperatorInfo op, bool explode, in JsonElement instance)
     {
         bool isFirst = true;
-        foreach (JsonObjectProperty value in instance.EnumerateObject())
+        foreach (JsonProperty value in instance.EnumerateObject())
         {
             if (!isFirst)
             {
@@ -213,18 +229,10 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAn
     /// <param name="value">The value to append.</param>
     /// <param name="prefixLength">The prefix length.</param>
     /// <param name="allowReserved">Whether to allow reserved characters.</param>
-    private static void AppendNameAndStringValue(IBufferWriter<char> output, ReadOnlySpan<char> variable, string ifEmpty, JsonAny value, int prefixLength, bool allowReserved)
+    private static void AppendNameAndStringValue(IBufferWriter<char> output, ReadOnlySpan<char> variable, string ifEmpty, JsonElement value, int prefixLength, bool allowReserved)
     {
         output.Write(variable);
-
-        if (value.HasJsonElementBacking)
-        {
-            value.AsJsonElement.TryGetValue(ProcessString, new AppendNameAndValueState(output, ifEmpty, prefixLength, allowReserved), out bool _);
-        }
-        else
-        {
-            ProcessString(value.AsSpan(), new AppendNameAndValueState(output, ifEmpty, prefixLength, allowReserved), out bool _);
-        }
+        value.TryGetValue(ProcessString, new AppendNameAndValueState(output, ifEmpty, prefixLength, allowReserved), out bool _);
     }
 
     /// <summary>
@@ -234,18 +242,11 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAn
     /// <param name="value">The value to append.</param>
     /// <param name="prefixLength">The prefix length.</param>
     /// <param name="allowReserved">Whether to allow reserved characters.</param>
-    private static void AppendValue(IBufferWriter<char> output, JsonAny value, int prefixLength, bool allowReserved)
+    private static void AppendValue(IBufferWriter<char> output, JsonElement value, int prefixLength, bool allowReserved)
     {
         if (value.ValueKind == JsonValueKind.String)
         {
-            if (value.HasJsonElementBacking)
-            {
-                value.AsJsonElement.TryGetValue(ProcessString, new AppendValueState(output, prefixLength, allowReserved), out bool _);
-            }
-            else
-            {
-                ProcessString(value.AsSpan(), new AppendValueState(output, prefixLength, allowReserved), out bool _);
-            }
+            value.TryGetValue(ProcessString, new AppendValueState(output, prefixLength, allowReserved), out bool _);
         }
         else if (value.ValueKind == JsonValueKind.True)
         {
@@ -261,7 +262,7 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAn
         }
         else if (value.ValueKind == JsonValueKind.Number)
         {
-            double valueNumber = (double)value;
+            double valueNumber = value.GetDouble();
 
             // The maximum number of digits in a double precision number is 1074; we allocate a little above this
             Span<char> buffer = stackalloc char[1100];
@@ -310,8 +311,21 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAn
         TemplateParameterProvider.Encode(output, valueString, allowReserved);
     }
 
-    private readonly record struct AppendValueState(IBufferWriter<char> Output, int PrefixLength, bool AllowReserved)
+    private readonly struct AppendValueState
     {
+        public AppendValueState(IBufferWriter<char> output, int prefixLength, bool allowReserved)
+        {
+            this.Output = output;
+            this.PrefixLength = prefixLength;
+            this.AllowReserved = allowReserved;
+        }
+
+        public IBufferWriter<char> Output { get; }
+
+        public int PrefixLength { get; }
+
+        public bool AllowReserved { get; }
+
         public static implicit operator (IBufferWriter<char> Output, int PrefixLength, bool AllowReserved)(AppendValueState value)
         {
             return (value.Output, value.PrefixLength, value.AllowReserved);
@@ -323,8 +337,24 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAn
         }
     }
 
-    private readonly record struct AppendNameAndValueState(IBufferWriter<char> Output, string IfEmpty, int PrefixLength, bool AllowReserved)
+    private readonly struct AppendNameAndValueState
     {
+        public AppendNameAndValueState(IBufferWriter<char> output, string ifEmpty, int prefixLength, bool allowReserved)
+        {
+            this.Output = output;
+            this.IfEmpty = ifEmpty;
+            this.PrefixLength = prefixLength;
+            this.AllowReserved = allowReserved;
+        }
+
+        public IBufferWriter<char> Output { get; }
+
+        public string IfEmpty { get; }
+
+        public int PrefixLength { get; }
+
+        public bool AllowReserved { get; }
+
         public static implicit operator (IBufferWriter<char> Output, string IfEmpty, int PrefixLength, bool AllowReserved)(AppendNameAndValueState value)
         {
             return (value.Output, value.IfEmpty, value.PrefixLength, value.AllowReserved);
@@ -336,8 +366,18 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonAn
         }
     }
 
-    private readonly record struct WriteEncodedPropertyNameState(IBufferWriter<char> Output, bool AllowReserved)
+    private readonly struct WriteEncodedPropertyNameState
     {
+        public WriteEncodedPropertyNameState(IBufferWriter<char> output, bool allowReserved)
+        {
+            this.Output = output;
+            this.AllowReserved = allowReserved;
+        }
+
+        public IBufferWriter<char> Output { get; }
+
+        public bool AllowReserved { get; }
+
         public static implicit operator (IBufferWriter<char> Output, bool AllowReserved)(WriteEncodedPropertyNameState value)
         {
             return (value.Output, value.AllowReserved);

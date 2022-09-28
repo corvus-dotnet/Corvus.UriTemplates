@@ -1,21 +1,21 @@
-﻿// <copyright file="DictionaryUriTemplateResolver.cs" company="Endjin Limited">
+﻿// <copyright file="JsonUriTemplateResolver.cs" company="Endjin Limited">
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 
-namespace Corvus.UriTemplates.TavisApi;
+namespace Corvus.UriTemplates;
 
 /// <summary>
 /// A wrapper around <see cref="UriTemplateResolver{TParameterProvider, TParameterPayload}"/>
-/// for a <see cref="DictionaryTemplateParameterProvider"/>.
+/// for a <see cref="JsonTemplateParameterProvider"/>.
 /// </summary>
-internal static class DictionaryUriTemplateResolver
+public static class JsonUriTemplateResolver
 {
-    private static readonly Dictionary<string, object?> EmptyDictionary = new();
 #if NET6_0
-    private static readonly DictionaryTemplateParameterProvider ParameterProvider = new();
+    private static readonly JsonTemplateParameterProvider ParameterProvider = new();
 #endif
 
     /// <summary>
@@ -30,12 +30,12 @@ internal static class DictionaryUriTemplateResolver
     /// <param name="state">The state passed to the callback(s).</param>
     /// <returns><see langword="true"/> if the URI matched the template, and the parameters were resolved successfully.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryResolveResult<TState>(ReadOnlySpan<char> template, bool resolvePartially, in IDictionary<string, object?> parameters, ParameterNameCallback<TState> parameterNameCallback, ResolvedUriTemplateCallback<TState> callback, ref TState state)
+    public static bool TryResolveResult<TState>(ReadOnlySpan<char> template, bool resolvePartially, in JsonElement parameters, ParameterNameCallback<TState>? parameterNameCallback, ResolvedUriTemplateCallback<TState> callback, ref TState state)
     {
 #if NET6_0
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(ParameterProvider, template, resolvePartially, parameters, callback, parameterNameCallback, ref state);
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(ParameterProvider, template, resolvePartially, parameters, callback, parameterNameCallback, ref state);
 #else
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(template, resolvePartially, parameters, callback, parameterNameCallback, ref state);
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(template, resolvePartially, parameters, callback, parameterNameCallback, ref state);
 #endif
     }
 
@@ -50,12 +50,12 @@ internal static class DictionaryUriTemplateResolver
     /// <param name="state">The state passed to the callback(s).</param>
     /// <returns><see langword="true"/> if the URI matched the template, and the parameters were resolved successfully.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryResolveResult<TState>(ReadOnlySpan<char> template, bool resolvePartially, in IDictionary<string, object?> parameters, ResolvedUriTemplateCallback<TState> callback, ref TState state)
+    public static bool TryResolveResult<TState>(ReadOnlySpan<char> template, bool resolvePartially, in JsonElement parameters, ResolvedUriTemplateCallback<TState> callback, ref TState state)
     {
 #if NET6_0
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(ParameterProvider, template, resolvePartially, parameters, callback, null, ref state);
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(ParameterProvider, template, resolvePartially, parameters, callback, null, ref state);
 #else
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(template, resolvePartially, parameters, callback, null, ref state);
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(template, resolvePartially, parameters, callback, null, ref state);
 #endif
     }
 
@@ -68,13 +68,13 @@ internal static class DictionaryUriTemplateResolver
     /// <param name="parameters">The parameters to apply to the template.</param>
     /// <returns><see langword="true"/> if the URI matched the template, and the parameters were resolved successfully.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryResolveResult(ReadOnlySpan<char> template, IBufferWriter<char> output, bool resolvePartially, in IDictionary<string, object?> parameters)
+    public static bool TryResolveResult(ReadOnlySpan<char> template, IBufferWriter<char> output, bool resolvePartially, in JsonElement parameters)
     {
         object? nullState = default;
 #if NET6_0
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(ParameterProvider, template, output, resolvePartially, parameters, null, ref nullState);
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(ParameterProvider, template, output, resolvePartially, parameters, null, ref nullState);
 #else
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(template, output, resolvePartially, parameters, null, ref nullState);
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(template, output, resolvePartially, parameters, null, ref nullState);
 #endif
     }
 
@@ -90,9 +90,9 @@ internal static class DictionaryUriTemplateResolver
     public static bool TryGetParameterNames<TState>(ReadOnlySpan<char> template, ParameterNameCallback<TState> callback, ref TState state)
     {
 #if NET6_0
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(ParameterProvider, template, true, EmptyDictionary, Nop, callback, ref state);
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(ParameterProvider, template, true, default, Nop, callback, ref state);
 #else
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(template, true, EmptyDictionary, Nop, callback, ref state);
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(template, true, default, Nop, callback, ref state);
 #endif
 
         static void Nop(ReadOnlySpan<char> value, ref TState state)

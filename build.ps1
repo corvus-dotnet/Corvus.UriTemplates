@@ -127,8 +127,9 @@ $SkipVersion = $false
 $SkipBuild = $false
 $CleanBuild = $Clean
 $SkipTest = $false
-$SkipTestReport = $false
+$SkipTestReport = $true
 $SkipPackage = $false
+$SkipAnalysis = $false
 
 
 #

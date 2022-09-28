@@ -371,7 +371,7 @@ public static class UriTemplateParserFactory
                         // Now we are looking ahead to the next terminator, or the end of the segment
                         while (segmentEnd < segment.Length)
                         {
-#if NETSTANDARD2_1
+#if NET6_0
                             if (terminatorsSpan.Contains(segment.Slice(segmentEnd, 1), StringComparison.Ordinal))
 #else
                             if (terminatorsSpan.Contains(segment[segmentEnd]))

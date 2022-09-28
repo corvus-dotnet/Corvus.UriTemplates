@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.HighPerformance;
 using Corvus.UriTemplates.TemplateParameterProviders;
 
-namespace Corvus.UriTemplates.TavisApi;
+namespace Corvus.UriTemplates;
 
 /// <summary>
 /// Implements a parameter provider over a JsonAny.

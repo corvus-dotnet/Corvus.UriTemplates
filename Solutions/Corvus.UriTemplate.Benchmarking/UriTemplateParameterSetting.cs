@@ -2,8 +2,8 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
+using System.Text.Json;
 using BenchmarkDotNet.Attributes;
-using Corvus.Json;
 
 namespace Corvus.UriTemplates.Benchmarking;
 
@@ -15,8 +15,8 @@ public class UriTemplateParameterSetting
 {
     private const string UriTemplate = "http://example.org/location{?value*}";
     private static readonly Dictionary<string, string> Values = new() { { "foo", "bar" }, { "bar", "baz" }, { "baz", "bob" } };
-    private static readonly JsonAny JsonValues = JsonAny.FromProperties(("foo", "bar"), ("bar", "baz"), ("baz", "bob")).AsJsonElementBackedValue();
 
+    private readonly JsonDocument jsonValues = JsonDocument.Parse("{ \"foo\": \"bar\", \"bar\": \"baz\", \"baz\": \"bob\" }");
     private Tavis.UriTemplates.UriTemplate? tavisTemplate;
     private TavisApi.UriTemplate? corvusTavisTemplate;
 
@@ -39,6 +39,7 @@ public class UriTemplateParameterSetting
     [GlobalCleanup]
     public Task GlobalCleanup()
     {
+        this.jsonValues.Dispose();
         return Task.CompletedTask;
     }
 
@@ -69,7 +70,7 @@ public class UriTemplateParameterSetting
     public void ResolveUriCorvus()
     {
         object? nullState = default;
-        JsonUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, JsonValues, HandleResult, ref nullState);
+        JsonUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, this.jsonValues.RootElement, HandleResult, ref nullState);
         static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
         {
             // NOP

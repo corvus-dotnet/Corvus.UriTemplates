@@ -194,19 +194,39 @@ The `TParameterProvider` is a type which implements `ITemplateParameterProvider<
 
 This allows you to process parameters as efficiently as possible, based on the types you need to support.
 
-The benchmarks contain an example built over the low-allocation [Corvus.JsonSchema.ExtendedTypes](https://github.com/corvus-dotnet/Corvus.JsonSchema) called `JsonTemplateParameterProvider` that takes a parameter set based on a JSON object, supporting all JSON element types as parameter values.
+The package `Corvus.UriTemplates.Resolvers.Json` contains a `JsonTemplateResolver` that takes a parameter set based on a `System.Text.Json.JsonElement` of `JsonValueKind.Object`. Its properties become the named parameters.
 
 ```csharp
+using JsonDocument jsonValues = JsonDocument.Parse("{ \"foo\": \"bar\", \"bar\": \"baz\", \"baz\": \"bob\" }");
 object? nullState = default;
-JsonUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, JsonValues, HandleResult, ref nullState);
+JsonUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, jsonValues.RootElement, HandleResult, ref nullState);
+
 static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
 {
-    Do what you want with the resolved template!
+    // Do what you want with the resolved template
+    // (Typically, you use the state you have passed in to pprovide the resolved template
+    //  to the outside world in some form.)
 }
 ```
 
 There are also overloads of `TryResolveResult` which will write to an `IBufferWriter<char>` instead of providing the `ReadOnlySpan<char>` to a callback.
 
+Similarly, a resolver that takes parameters from a `Dictionary<string, object?>` can be found in the package `Corvus.UriTemplates.Resolvers.DictionaryOfObject`.
+
+```csharp
+using JsonDocument jsonValues = JsonDocument.Parse("{ \"foo\": \"bar\", \"bar\": \"baz\", \"baz\": \"bob\" }");
+object? nullState = default;
+JsonUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, jsonValues.RootElement, HandleResult, ref nullState);
+
+static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
+{
+    // Do what you want with the resolved template
+    // (Typically, you use the state you have passed in to pprovide the resolved template
+    //  to the outside world in some form.)
+}
+```
+
+You should examine the implementations of those types if you wish to implement your own low-allocation parameter providers.
 
 ## Build and test
 

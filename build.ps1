@@ -154,6 +154,10 @@ $ReportGeneratorToolVersion = "5.1.10"
 #
 $ExcludeFilesFromCodeCoverage = ""
 
+#
+# Temporarily skip the test report
+#
+$SkipTestReport = $true
 
 # Synopsis: Build, Test and Package
 task . FullBuild

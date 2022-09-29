@@ -79,7 +79,7 @@ public struct ParameterCache
         for (int i = 0; i < this.written; ++i)
         {
             CacheEntry item = this.items[i];
-            callback(item.Name.AsSpan(0, item.NameLength), item.Value.AsSpan(0, item.ValueLength));
+            callback(item.Name, item.Value);
         }
     }
 
@@ -90,17 +90,16 @@ public struct ParameterCache
     /// <param name="value">The value of the parameter to add.</param>
     public void Add(ReadOnlySpan<char> name, ReadOnlySpan<char> value)
     {
-        char[] nameArray = name.Length > 0 ? ArrayPool<char>.Shared.Rent(name.Length) : Array.Empty<char>();
-        name.CopyTo(nameArray);
-        char[] valueArray = value.Length > 0 ? ArrayPool<char>.Shared.Rent(value.Length) : Array.Empty<char>();
-        value.CopyTo(valueArray);
+        char[] entryArray = name.Length + value.Length > 0 ? ArrayPool<char>.Shared.Rent(name.Length + value.Length) : Array.Empty<char>();
+        name.CopyTo(entryArray);
+        value.CopyTo(entryArray.AsSpan(name.Length));
 
         if (this.written == this.items.Length)
         {
             ArrayPool<CacheEntry>.Shared.Resize(ref this.items, this.items.Length + this.bufferIncrement);
         }
 
-        this.items[this.written] = new(nameArray, name.Length, valueArray, value.Length);
+        this.items[this.written] = new(entryArray, name.Length, value.Length);
         this.written++;
     }
 
@@ -121,45 +120,33 @@ public struct ParameterCache
     {
         for (int i = 0; i < this.written; ++i)
         {
-            CacheEntry item = this.items[i];
-            if (item.Name.Length > 0)
-            {
-                ArrayPool<char>.Shared.Return(item.Name, true);
-            }
-
-            if (item.Value.Length > 0)
-            {
-                ArrayPool<char>.Shared.Return(item.Value, true);
-            }
+            this.items[i].Return();
         }
     }
 
     private readonly struct CacheEntry
     {
-        public CacheEntry(in char[] name, int nameLength, in char[] value, int valueLength)
+        private readonly char[] entry;
+        private readonly int nameLength;
+        private readonly int valueLength;
+
+        public CacheEntry(in char[] entry, int nameLength, int valueLength)
         {
-            this.Name = name;
-            this.NameLength = nameLength;
-            this.Value = value;
-            this.ValueLength = valueLength;
+            this.entry = entry;
+            this.nameLength = nameLength;
+            this.valueLength = valueLength;
         }
 
-        public char[] Name { get; }
+        public Span<char> Name => this.nameLength > 0 ? this.entry.AsSpan(0, this.nameLength) : Span<char>.Empty;
 
-        public int NameLength { get; }
+        public Span<char> Value => this.valueLength > 0 ? this.entry.AsSpan(this.nameLength) : Span<char>.Empty;
 
-        public char[] Value { get; }
-
-        public int ValueLength { get; }
-
-        public static implicit operator (char[] Name, int NameLength, char[] Value, int ValueLength)(CacheEntry value)
+        public void Return()
         {
-            return (value.Name, value.NameLength, value.Value, value.ValueLength);
-        }
-
-        public static implicit operator CacheEntry((char[] Name, int NameLength, char[] Value, int ValueLength) value)
-        {
-            return new CacheEntry(value.Name, value.NameLength, value.Value, value.ValueLength);
+            if (this.entry.Length > 0)
+            {
+                ArrayPool<char>.Shared.Return(this.entry);
+            }
         }
     }
 }

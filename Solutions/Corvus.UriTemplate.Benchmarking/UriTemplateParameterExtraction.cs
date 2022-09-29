@@ -67,6 +67,17 @@ public class UriTemplateParameterExtraction
     }
 
     /// <summary>
+    /// Extract parameters from a URI template using the Corvus implementation of the Tavis API.
+    /// </summary>
+    [Benchmark]
+    public void ExtractParametersCorvusTavisWithParameterCache()
+    {
+        var cache = ParameterCache.Rent(5);
+        this.corvusTemplate!.ParseUri(Uri, ParameterCache.HandleParameters, ref cache);
+        cache.Return();
+    }
+
+    /// <summary>
     /// Extract parameters from a URI template using Corvus types.
     /// </summary>
     [Benchmark]

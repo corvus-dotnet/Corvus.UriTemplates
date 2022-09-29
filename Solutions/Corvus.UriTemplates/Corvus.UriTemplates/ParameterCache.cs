@@ -76,13 +76,10 @@ public struct ParameterCache
     /// <param name="callback">The callback to recieve the enumerated parameters.</param>
     public void EnumerateParameters(ParameterCacheCallback callback)
     {
-        if (this.items is not null)
+        for (int i = 0; i < this.written; ++i)
         {
-            for (int i = 0; i < this.written; ++i)
-            {
-                CacheEntry item = this.items[i];
-                callback(item.Name.AsSpan(0, item.NameLength), item.Value.AsSpan(0, item.ValueLength));
-            }
+            CacheEntry item = this.items[i];
+            callback(item.Name.AsSpan(0, item.NameLength), item.Value.AsSpan(0, item.ValueLength));
         }
     }
 
@@ -103,7 +100,7 @@ public struct ParameterCache
             ArrayPool<CacheEntry>.Shared.Resize(ref this.items, this.items.Length + this.bufferIncrement);
         }
 
-        this.items[this.written] = (nameArray, name.Length, valueArray, value.Length);
+        this.items[this.written] = new(nameArray, name.Length, valueArray, value.Length);
         this.written++;
     }
 
@@ -127,21 +124,19 @@ public struct ParameterCache
             CacheEntry item = this.items[i];
             if (item.Name.Length > 0)
             {
-                item.Name.AsSpan().Clear();
-                ArrayPool<char>.Shared.Return(item.Name);
+                ArrayPool<char>.Shared.Return(item.Name, true);
             }
 
             if (item.Value.Length > 0)
             {
-                item.Value.AsSpan().Clear();
-                ArrayPool<char>.Shared.Return(item.Value);
+                ArrayPool<char>.Shared.Return(item.Value, true);
             }
         }
     }
 
     private readonly struct CacheEntry
     {
-        public CacheEntry(char[] name, int nameLength, char[] value, int valueLength)
+        public CacheEntry(in char[] name, int nameLength, in char[] value, int valueLength)
         {
             this.Name = name;
             this.NameLength = nameLength;

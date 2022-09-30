@@ -13,6 +13,7 @@ resources:
       type: github
       name: endjin/Endjin.RecommendedPractices.AzureDevopsPipelines.GitHub
       endpoint: corvus-dotnet-github
+      ref: feature/add-hades-publish-support
 
 jobs:
 - template: templates/build.and.release.scripted.yml@recommended_practices
@@ -24,3 +25,4 @@ jobs:
     additionalNetSdkVersions:
     - '7.x'
     includeNetSdkPreviewVersions: 'true'
+    analysisOutputSasToken: $(Endjin_AnalysisOutput_SASToken)

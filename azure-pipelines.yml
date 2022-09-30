@@ -13,7 +13,6 @@ resources:
       type: github
       name: endjin/Endjin.RecommendedPractices.AzureDevopsPipelines.GitHub
       endpoint: corvus-dotnet-github
-      ref: feature/add-hades-publish-support
 
 jobs:
 - template: templates/build.and.release.scripted.yml@recommended_practices

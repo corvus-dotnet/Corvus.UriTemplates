@@ -11,20 +11,15 @@ namespace UriTemplateTests
         [Fact]
         public void ShouldRetrieveParameters()
         {
-            var state = ParameterCache.Rent(5);
             IUriTemplateParser corvusTemplate = UriTemplateParserFactory.CreateParser("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId={parentRequestId}{&hash,callback}");
 
-            corvusTemplate!.ParseUri("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=123232323&hash=23ADE34FAE&callback=http%3A%2F%2Fexample.com%2Fcallback", ParameterCache.HandleParameters, ref state);
+            int state = 0;
 
-            int count = 0;
+            corvusTemplate!.EnumerateParameters("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=123232323&hash=23ADE34FAE&callback=http%3A%2F%2Fexample.com%2Fcallback", Callback, ref state);
 
-            state.EnumerateParameters(Callback);
+            Assert.Equal(3, state);
 
-            Assert.Equal(3, count);
-
-            state.Return();
-
-            void Callback(ReadOnlySpan<char> name, ReadOnlySpan<char> value)
+            void Callback(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref int count)
             {
                 if (name.SequenceEqual("parentRequestId"))
                 {
@@ -51,20 +46,14 @@ namespace UriTemplateTests
         [Fact]
         public void ShouldRetrieveParametersWhenReallocationIsRequired()
         {
-            var state = ParameterCache.Rent(1);
             IUriTemplateParser corvusTemplate = UriTemplateParserFactory.CreateParser("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId={parentRequestId}{&hash,callback}");
 
-            corvusTemplate!.ParseUri("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=123232323&hash=23ADE34FAE&callback=http%3A%2F%2Fexample.com%2Fcallback", ParameterCache.HandleParameters, ref state);
+            int state = 0;
+            corvusTemplate!.EnumerateParameters("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=123232323&hash=23ADE34FAE&callback=http%3A%2F%2Fexample.com%2Fcallback", Callback, ref state, 1);
 
-            int count = 0;
+            Assert.Equal(3, state);
 
-            state.EnumerateParameters(Callback);
-
-            Assert.Equal(3, count);
-
-            state.Return();
-
-            void Callback(ReadOnlySpan<char> name, ReadOnlySpan<char> value)
+            void Callback(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref int count)
             {
                 if (name.SequenceEqual("parentRequestId"))
                 {

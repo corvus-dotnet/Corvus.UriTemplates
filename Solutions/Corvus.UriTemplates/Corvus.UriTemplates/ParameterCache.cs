@@ -150,7 +150,7 @@ internal struct ParameterCache
 
         public Span<char> Name => this.nameLength > 0 ? this.entry.AsSpan(0, this.nameLength) : Span<char>.Empty;
 
-        public Span<char> Value => this.valueLength > 0 ? this.entry.AsSpan(this.nameLength) : Span<char>.Empty;
+        public Span<char> Value => this.valueLength > 0 ? this.entry.AsSpan(this.nameLength, this.valueLength) : Span<char>.Empty;
 
         public void Return()
         {

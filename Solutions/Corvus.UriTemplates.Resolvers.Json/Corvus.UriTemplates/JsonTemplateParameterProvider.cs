@@ -54,7 +54,7 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
         {
             if (variableSpecification.OperatorInfo.Named && !variableSpecification.Explode) //// exploding will prefix with list name
             {
-                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, value.GetArrayLength() == 0);
+                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, false);
             }
 
             AppendArray(output, variableSpecification.OperatorInfo, variableSpecification.Explode, variableSpecification.VarName, value);
@@ -68,7 +68,7 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
 
             if (variableSpecification.OperatorInfo.Named && !variableSpecification.Explode) //// exploding will prefix with list name
             {
-                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, !HasProperties(value));
+                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, false);
             }
 
             AppendObject(output, variableSpecification.OperatorInfo, variableSpecification.Explode, value);
@@ -88,7 +88,7 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
         {
             if (variableSpecification.OperatorInfo.Named)
             {
-                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, IsNullOrUndefined(value));
+                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, false);
             }
 
             AppendValue(output, value, variableSpecification.PrefixLength, variableSpecification.OperatorInfo.AllowReserved);

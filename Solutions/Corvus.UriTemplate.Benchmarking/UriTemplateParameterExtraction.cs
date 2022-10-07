@@ -63,7 +63,7 @@ public class UriTemplateParameterExtraction
     [Benchmark]
     public void ExtractParametersCorvusTavis()
     {
-        this.corvusTavisTemplate!.GetParameters(TavisUri);
+        IDictionary<string, object?>? result = this.corvusTavisTemplate!.GetParameters(TavisUri);
     }
 
     /// <summary>
@@ -72,9 +72,21 @@ public class UriTemplateParameterExtraction
     [Benchmark]
     public void ExtractParametersCorvusTavisWithParameterCache()
     {
-        var cache = ParameterCache.Rent(5);
-        this.corvusTemplate!.ParseUri(Uri, ParameterCache.HandleParameters, ref cache);
-        cache.Return();
+        int state = 0;
+
+        if (this.corvusTemplate!.EnumerateParameters(Uri, HandleParameters, ref state))
+        {
+            // We can use the state
+        }
+        else
+        {
+            // We can't use the state
+        }
+
+        static void HandleParameters(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref int state)
+        {
+            state++;
+        }
     }
 
     /// <summary>
@@ -83,12 +95,19 @@ public class UriTemplateParameterExtraction
     [Benchmark]
     public void ExtractParametersCorvus()
     {
-        object? state = default;
-        this.corvusTemplate!.ParseUri(Uri, HandleParameters, ref state);
+        int state = 0;
+        this.corvusTemplate!.ParseUri(Uri, HandleParameterMatching, ref state);
 
-        static void HandleParameters(bool reset, ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref object? state)
+        static void HandleParameterMatching(bool reset, ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref int state)
         {
-            // NOP
+            if (reset)
+            {
+                state = 0;
+            }
+            else
+            {
+                state++;
+            }
         }
     }
 }

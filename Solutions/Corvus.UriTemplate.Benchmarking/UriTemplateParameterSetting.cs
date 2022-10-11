@@ -14,9 +14,10 @@ namespace Corvus.UriTemplates.Benchmarking;
 public class UriTemplateParameterSetting
 {
     private const string UriTemplate = "http://example.org/location{?value*}";
-    private static readonly Dictionary<string, string> Values = new() { { "foo", "bar" }, { "bar", "baz" }, { "baz", "bob" } };
+    private static readonly Dictionary<string, string> Value = new() { { "foo", "bar" }, { "bar", "baz" }, { "baz", "bob" } };
+    private static readonly Dictionary<string, object?> Parameters = new() { { "value", Value } };
 
-    private readonly JsonDocument jsonValues = JsonDocument.Parse("{ \"foo\": \"bar\", \"bar\": \"baz\", \"baz\": \"bob\" }");
+    private readonly JsonDocument jsonValues = JsonDocument.Parse("{\"value\": { \"foo\": \"bar\", \"bar\": \"baz\", \"baz\": \"bob\" }}");
     private Tavis.UriTemplates.UriTemplate? tavisTemplate;
     private TavisApi.UriTemplate? corvusTavisTemplate;
 
@@ -49,7 +50,7 @@ public class UriTemplateParameterSetting
     [Benchmark(Baseline = true)]
     public void ResolveUriTavis()
     {
-        this.tavisTemplate!.SetParameter("value", Values);
+        this.tavisTemplate!.SetParameter("value", Value);
         this.tavisTemplate!.Resolve();
     }
 
@@ -59,7 +60,7 @@ public class UriTemplateParameterSetting
     [Benchmark]
     public void ResolveUriCorvusTavis()
     {
-        this.corvusTavisTemplate!.SetParameter("value", Values);
+        this.corvusTavisTemplate!.SetParameter("value", Value);
         this.corvusTavisTemplate!.Resolve();
     }
 
@@ -67,10 +68,24 @@ public class UriTemplateParameterSetting
     /// Resolve a URI from a template and parameter values using Corvus.UriTemplateResolver.
     /// </summary>
     [Benchmark]
-    public void ResolveUriCorvus()
+    public void ResolveUriCorvusJson()
     {
         object? nullState = default;
         JsonUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, this.jsonValues.RootElement, HandleResult, ref nullState);
+        static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
+        {
+            // NOP
+        }
+    }
+
+    /// <summary>
+    /// Resolve a URI from a template and parameter values using Corvus.UriTemplateResolver.
+    /// </summary>
+    [Benchmark]
+    public void ResolveUriCorvusDictionary()
+    {
+        object? nullState = default;
+        DictionaryUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, Parameters, HandleResult, ref nullState);
         static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
         {
             // NOP

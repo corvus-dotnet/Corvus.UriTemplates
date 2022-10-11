@@ -9,9 +9,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Corvus.UriTemplates", "Corv
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UriTemplateTests", "Corvus.UriTemplate.TavisApi.Tests\UriTemplateTests.csproj", "{32E0D248-3274-4C77-B1D4-7035E184958B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Corvus.UriTemplates.Resolvers.Json", "Corvus.UriTemplates.Resolvers.Json\Corvus.UriTemplates.Resolvers.Json.csproj", "{69C2149D-21D8-48FA-B201-7AFD59EBB5EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Corvus.UriTemplates.Resolvers.Json", "Corvus.UriTemplates.Resolvers.Json\Corvus.UriTemplates.Resolvers.Json.csproj", "{69C2149D-21D8-48FA-B201-7AFD59EBB5EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Corvus.UriTemplates.Resolvers.DictionaryOfObject", "Corvus.UriTemplates.Resolvers.DictionaryOfObject\Corvus.UriTemplates.Resolvers.DictionaryOfObject.csproj", "{C77AE102-65C4-4C64-8B53-B2476EC80280}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Corvus.UriTemplates.Resolvers.DictionaryOfObject", "Corvus.UriTemplates.Resolvers.DictionaryOfObject\Corvus.UriTemplates.Resolvers.DictionaryOfObject.csproj", "{C77AE102-65C4-4C64-8B53-B2476EC80280}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sandbox", "Sandbox\Sandbox.csproj", "{302F8634-2171-43DB-B5DD-5B01BE6026C2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{C77AE102-65C4-4C64-8B53-B2476EC80280}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C77AE102-65C4-4C64-8B53-B2476EC80280}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C77AE102-65C4-4C64-8B53-B2476EC80280}.Release|Any CPU.Build.0 = Release|Any CPU
+		{302F8634-2171-43DB-B5DD-5B01BE6026C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{302F8634-2171-43DB-B5DD-5B01BE6026C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{302F8634-2171-43DB-B5DD-5B01BE6026C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{302F8634-2171-43DB-B5DD-5B01BE6026C2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

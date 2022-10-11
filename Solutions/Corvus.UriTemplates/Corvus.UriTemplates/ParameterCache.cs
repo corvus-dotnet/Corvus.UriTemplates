@@ -10,7 +10,7 @@ namespace Corvus.UriTemplates;
 /// <summary>
 /// A cache for parameters extracted from a URI template.
 /// </summary>
-public struct ParameterCache
+internal struct ParameterCache
 {
     private readonly int bufferIncrement;
     private CacheEntry[] items;
@@ -25,11 +25,34 @@ public struct ParameterCache
     }
 
     /// <summary>
-    /// A callback for enumerating parameters from the cache.
+    /// Enumerate the parameters in the parser.
     /// </summary>
-    /// <param name="name">The name of the parameter.</param>
-    /// <param name="value">The value of the parameter.</param>
-    public delegate void ParameterCacheCallback(ReadOnlySpan<char> name, ReadOnlySpan<char> value);
+    /// <typeparam name="TState">The type of the state for the callback.</typeparam>
+    /// <param name="parser">The parser to use.</param>
+    /// <param name="uri">The uri to parse.</param>
+    /// <param name="initialCapacity">The initial cache size, which should be greater than or equal to the expected number of parameters.
+    /// It also provides the increment for the cache size should it be exceeded.</param>
+    /// <param name="callback">The callback to recieve the enumerated parameters.</param>
+    /// <param name="state">The state for the callback.</param>
+    /// <returns><see langword="true"/> if the parser was successful, otherwise <see langword="false"/>.</returns>
+    public static bool EnumerateParameters<TState>(IUriTemplateParser parser, ReadOnlySpan<char> uri, int initialCapacity, EnumerateParametersCallback<TState> callback, ref TState state)
+    {
+        ParameterCache cache = Rent(initialCapacity);
+        if (parser.ParseUri(uri, HandleParameters, ref cache))
+        {
+            for (int i = 0; i < cache.written; ++i)
+            {
+                CacheEntry item = cache.items[i];
+                callback(item.Name, item.Value, ref state);
+            }
+
+            cache.Return();
+            return true;
+        }
+
+        cache.Return();
+        return false;
+    }
 
     /// <summary>
     /// Rent an instance of a parameter cache.
@@ -37,7 +60,7 @@ public struct ParameterCache
     /// <param name="initialCapacity">The initial capacity of the cache.</param>
     /// <returns>An instance of a parameter cache.</returns>
     /// <remarks>When you have finished with the cache, call <see cref="Return()"/> to relinquish any internal resources.</remarks>
-    public static ParameterCache Rent(int initialCapacity)
+    private static ParameterCache Rent(int initialCapacity)
     {
         return new(initialCapacity);
     }
@@ -49,7 +72,8 @@ public struct ParameterCache
     /// <param name="name">The name of the parameter.</param>
     /// <param name="value">The value of the parameter.</param>
     /// <param name="state">The parameter cache.</param>
-    public static void HandleParameters(bool reset, ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref ParameterCache state)
+    /// <remarks>Pass this to <see cref="IUriTemplateParser.ParseUri{TState}(ReadOnlySpan{char}, ParameterCallback{TState}, ref TState)"/>, as the callback.</remarks>
+    private static void HandleParameters(bool reset, ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref ParameterCache state)
     {
         if (!reset)
         {
@@ -62,55 +86,38 @@ public struct ParameterCache
     }
 
     /// <summary>
-    /// Reset the items written.
-    /// </summary>
-    public void Reset()
-    {
-        this.ResetItems();
-        this.written = 0;
-    }
-
-    /// <summary>
-    /// Enumerate the parameters in the cache.
-    /// </summary>
-    /// <param name="callback">The callback to recieve the enumerated parameters.</param>
-    public void EnumerateParameters(ParameterCacheCallback callback)
-    {
-        if (this.items is not null)
-        {
-            for (int i = 0; i < this.written; ++i)
-            {
-                CacheEntry item = this.items[i];
-                callback(item.Name.AsSpan(0, item.NameLength), item.Value.AsSpan(0, item.ValueLength));
-            }
-        }
-    }
-
-    /// <summary>
     /// Add a parameter to the cache.
     /// </summary>
     /// <param name="name">The name of the parameter to add.</param>
     /// <param name="value">The value of the parameter to add.</param>
-    public void Add(ReadOnlySpan<char> name, ReadOnlySpan<char> value)
+    private void Add(ReadOnlySpan<char> name, ReadOnlySpan<char> value)
     {
-        char[] nameArray = name.Length > 0 ? ArrayPool<char>.Shared.Rent(name.Length) : Array.Empty<char>();
-        name.CopyTo(nameArray);
-        char[] valueArray = value.Length > 0 ? ArrayPool<char>.Shared.Rent(value.Length) : Array.Empty<char>();
-        value.CopyTo(valueArray);
+        char[] entryArray = name.Length + value.Length > 0 ? ArrayPool<char>.Shared.Rent(name.Length + value.Length) : Array.Empty<char>();
+        name.CopyTo(entryArray);
+        value.CopyTo(entryArray.AsSpan(name.Length));
 
         if (this.written == this.items.Length)
         {
             ArrayPool<CacheEntry>.Shared.Resize(ref this.items, this.items.Length + this.bufferIncrement);
         }
 
-        this.items[this.written] = (nameArray, name.Length, valueArray, value.Length);
+        this.items[this.written] = new(entryArray, name.Length, value.Length);
         this.written++;
+    }
+
+    /// <summary>
+    /// Reset the items written.
+    /// </summary>
+    private void Reset()
+    {
+        this.ResetItems();
+        this.written = 0;
     }
 
     /// <summary>
     /// Return the resources used by the cache.
     /// </summary>
-    public void Return()
+    private void Return()
     {
         if (!this.returned)
         {
@@ -124,47 +131,33 @@ public struct ParameterCache
     {
         for (int i = 0; i < this.written; ++i)
         {
-            CacheEntry item = this.items[i];
-            if (item.Name.Length > 0)
-            {
-                item.Name.AsSpan().Clear();
-                ArrayPool<char>.Shared.Return(item.Name);
-            }
-
-            if (item.Value.Length > 0)
-            {
-                item.Value.AsSpan().Clear();
-                ArrayPool<char>.Shared.Return(item.Value);
-            }
+            this.items[i].Return();
         }
     }
 
     private readonly struct CacheEntry
     {
-        public CacheEntry(char[] name, int nameLength, char[] value, int valueLength)
+        private readonly char[] entry;
+        private readonly int nameLength;
+        private readonly int valueLength;
+
+        public CacheEntry(in char[] entry, int nameLength, int valueLength)
         {
-            this.Name = name;
-            this.NameLength = nameLength;
-            this.Value = value;
-            this.ValueLength = valueLength;
+            this.entry = entry;
+            this.nameLength = nameLength;
+            this.valueLength = valueLength;
         }
 
-        public char[] Name { get; }
+        public Span<char> Name => this.nameLength > 0 ? this.entry.AsSpan(0, this.nameLength) : Span<char>.Empty;
 
-        public int NameLength { get; }
+        public Span<char> Value => this.valueLength > 0 ? this.entry.AsSpan(this.nameLength, this.valueLength) : Span<char>.Empty;
 
-        public char[] Value { get; }
-
-        public int ValueLength { get; }
-
-        public static implicit operator (char[] Name, int NameLength, char[] Value, int ValueLength)(CacheEntry value)
+        public void Return()
         {
-            return (value.Name, value.NameLength, value.Value, value.ValueLength);
-        }
-
-        public static implicit operator CacheEntry((char[] Name, int NameLength, char[] Value, int ValueLength) value)
-        {
-            return new CacheEntry(value.Name, value.NameLength, value.Value, value.ValueLength);
+            if (this.entry.Length > 0)
+            {
+                ArrayPool<char>.Shared.Return(this.entry);
+            }
         }
     }
 }

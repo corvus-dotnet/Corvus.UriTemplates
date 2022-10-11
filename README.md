@@ -31,9 +31,8 @@ As you can see, there is a significant benefit to using the Corvus implementatio
 | ExtractParametersCorvusTavis | 495.2 ns |    NA |  0.50 | 0.1450 |     608 B |        0.55 |
 |      ExtractParametersCorvus | 174.6 ns |    NA |  0.18 |      - |         - |        0.00 |
 
-## Parameter Extraction
-
-### Using the Tavis API
+## Tavis API
+### Parameter Extraction
 
 ```csharp
 UriTemplate template = new("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId={parentRequestId}{&hash,callback}");
@@ -43,52 +42,7 @@ Uri uri = new ("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=12
 IDictionary<string, object?>? result = template.GetParameters(uri);
 ```
 
-### Using the low-allocation API directly
-
-The lowest-level access makes use of a callback, which is fed the parameters as they are found.
-
-If the `reset` flag is set, you should disregard any parameters that have previously been sent, and start again. (This is typically the case where a partial match fails, and is restarted.)
-
-In order to manage the cache/reset process for you, we provide a `ParameterCache` type. You can rent an instance, and use it to accumulate the results for you. You can then enumerate the result set, and return the resource that have been rented for you.
-
-```csharp
-var state = ParameterCache.Rent(5);
-IUriTemplateParser corvusTemplate = UriTemplateParserFactory.CreateParser("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId={parentRequestId}{&hash,callback}");
-
-corvusTemplate!.ParseUri("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=123232323&hash=23ADE34FAE&callback=http%3A%2F%2Fexample.com%2Fcallback", ParameterCache.HandleParameters, ref state);
-
-state.EnumerateParameters(HandleFinalParameterSet);
-
-state.Return();
-
-void HandleFinalParameterSet(ReadOnlySpan<char> name, ReadOnlySpan<char> value)
-{
-    if (name.SequenceEqual("parentRequestId"))
-    {
-        Assert.True(value.SequenceEqual("123232323"), $"parentRequestId was {value}");
-        count++;
-    }
-    else if (name.SequenceEqual("hash"))
-    {
-        Assert.True(value.SequenceEqual("23ADE34FAE"), $"hash was {value}");
-        count++;
-    }
-    else if (name.SequenceEqual("callback"))
-    {
-        Assert.True(value.SequenceEqual("http%3A%2F%2Fexample.com%2Fcallback"), $"callback was {value}");
-        count++;
-    }
-    else
-    {
-        Assert.True(false, $"Unexpected parameter: (name: '{name}', value: '{value}')");
-    }
-}
-```
-
-
-## URI Resolution
-
-### Using the Tavis API
+### URI Resolution
 
 Replacing a path segment parameter,
 
@@ -186,47 +140,100 @@ public void TestExtremeEncoding()
 }
 ```
 
-### Using the low-allocation API directly
+Our `Corvus.UriTemplates.TavisApi` implementation is built over an underlying low-allocation API.
 
-The low-allocation library provides a generic class `UriTemplateResolver<TParameterProvider, TParameterPayload>` for URI template resolution.
+## Low allocation API
 
-The `TParameterProvider` is a type which implements `ITemplateParameterProvider<TParameterPayload>`, to process a parameter payload according to a variable specification.
+### Extracting parameter values from a URI by matching it to a URI template
 
-This allows you to process parameters as efficiently as possible, based on the types you need to support.
-
-The package `Corvus.UriTemplates.Resolvers.Json` contains a `JsonTemplateResolver` that takes a parameter set based on a `System.Text.Json.JsonElement` of `JsonValueKind.Object`. Its properties become the named parameters.
+To create an instance of a parser for a URI template, call one of the `CreateParser()` overloads, passing it your URI template.
 
 ```csharp
-using JsonDocument jsonValues = JsonDocument.Parse("{ \"foo\": \"bar\", \"bar\": \"baz\", \"baz\": \"bob\" }");
-object? nullState = default;
-JsonUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, jsonValues.RootElement, HandleResult, ref nullState);
+IUriTemplateParser UriTemplateParserFactory.CreateParser(string uriTemplate);
+```
 
-static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
+or
+
+```csharp
+IUriTemplateParser UriTemplateParserFactory.CreateParser(ReadOnlySpan<char> uriTemplate);
+```
+
+You would typically have some initialization code that is called once to build your parsers from your templates (either derived statically or from some configuration)
+
+```csharp
+private const string UriTemplate = "http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId={parentRequestId}{&hash,callback}";
+
+private static readonly IUriTemplateParser CorvusTemplate = CreateParser();
+
+private static IUriTemplateParser CreateParser()
 {
-    // Do what you want with the resolved template
-    // (Typically, you use the state you have passed in to pprovide the resolved template
-    //  to the outside world in some form.)
+    return
+        UriTemplateParserFactory.CreateParser(UriTemplate)
 }
 ```
 
-There are also overloads of `TryResolveResult` which will write to an `IBufferWriter<char>` instead of providing the `ReadOnlySpan<char>` to a callback.
+You can then make use of that parser to extract parameter values from a URI.
 
-Similarly, a resolver that takes parameters from a `Dictionary<string, object?>` can be found in the package `Corvus.UriTemplates.Resolvers.DictionaryOfObject`.
+The parser uses a callback model to deliver the parameters to you (to avoid allocations). If you are used to low allocation code, you will probably recognize the pattern.
+
+You call `EnumerateParmaeters()`, passing the URI you wish to parse (as a `ReadOnlySpan<char>`), a callback, and the initial value of a state object, which will be passed to that callback.
+
+The callback itself is called by the parser each time a matched parameter is discovered.
+
+It is given `ReadOnlySpan<char>` instances for the name and value pairs, along with the current version of the state object. This state is passed by `ref`, so you can update its value to keep track of whatever processing you are doing with the parameters you have been passed.
+
+Here's an example that just counts the parameters it has seen.
 
 ```csharp
-using JsonDocument jsonValues = JsonDocument.Parse("{ \"foo\": \"bar\", \"bar\": \"baz\", \"baz\": \"bob\" }");
-object? nullState = default;
-JsonUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, jsonValues.RootElement, HandleResult, ref nullState);
+int state = 0;
 
-static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
+CorvusTemplate.EnumerateParameters(Uri, HandleParameters, ref state);
+
+static void HandleParameters(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref int state)
 {
-    // Do what you want with the resolved template
-    // (Typically, you use the state you have passed in to pprovide the resolved template
-    //  to the outside world in some form.)
+    state++;
 }
 ```
 
-You should examine the implementations of those types if you wish to implement your own low-allocation parameter providers.
+> There is a defaulted optional parameter to this method that lets you specific an initial capacity for the cache; if you know how many parameters you are going to match, you can tune this to minimize the amount of re-allocation required.
+
+### Resolving a template by substituting parameter values and producing a URI
+
+The other basic scenario is injecting parameter values into a URI template to produce a URI (or another URI template if we haven't replaced all the parameters in the template).
+
+The underlying type that does the work is called `UriTemplateResolver<TParameterProvider,TParameterPayload>`.
+
+The `TParameterProvider` is an `ITemplateParameterProvider<TParameterPayload>` - an interface implemented by types which convert from a source of parameter values (the `TParameterPayload`), on behalf of the `UriTemplateResolver`.
+
+We offer two of these providers "out of the box" - the `JsonTemplateParameterProvider` (which adapts to a `JsonElement`) and the `DictionaryTemplateParameterProvider` (which adapts to an `IDictionary<string, object?>` and is used by the underlying Tavis-compatible API).
+
+To save you having to work directly with the `UriTemplateResolver` plugging in all the necessary generic parameters, most `ITemplateParameterProvider` implements will offer a convenience type, and these are no exception.
+
+`JsonUriTemplateResolver` and `DictionaryUriTemplateResolver` give you strongly typed `TryResolveResult` and `TryGetParameterNames` methods which you can use in your code.
+
+Here's an example.
+
+```csharp
+const string uriTemplate = "http://example.org/location{?value*}";
+
+using var jsonValues = JsonDocument.Parse("{\"value\": { \"foo\": \"bar\", \"bar\": 3.4, \"baz\": null }}");
+Dictionary<string, string> value = new() { { "foo", "bar" }, { "bar", "baz" }, { "baz", "bob" } };
+Dictionary<string, object?> parameters = new() { { "value", value } };
+
+object? nullState = default;
+
+JsonUriTemplateResolver.TryResolveResult(uriTemplate.AsSpan(), false, jsonValues.RootElement, HandleResult, ref nullState);
+DictionaryUriTemplateResolver.TryResolveResult(uriTemplate.AsSpan(), false, parameters, HandleResult, ref nullState);
+
+static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
+{
+    Console.WriteLine(resolvedTemplate.ToString());
+}
+```
+
+Notice how we can use the exact same callback that receives the resolved template, for both resolvers - the callback is not dependent on the particular parameter provider.
+
+> The Dictionary provider is somewhat faster than the JSON provider, largely because it has less work to do to extract parameter names and values. However, the JSON parameter provider offers direct support for all JSON value kinds (including encoding serialized "deeply nested" JSON values).
 
 ## Build and test
 

@@ -168,8 +168,7 @@ public static partial class UriExtensions
             {
                 if (pooledArray is not null)
                 {
-                    lowerName.Clear();
-                    ArrayPool<char>.Shared.Return(pooledArray);
+                    ArrayPool<char>.Shared.Return(pooledArray, true);
                 }
             }
         }

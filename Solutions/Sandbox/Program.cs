@@ -3,7 +3,7 @@ using Corvus.UriTemplates;
 
 const string uriTemplate = "http://example.org/location{?value*}";
 
-using var jsonValues = JsonDocument.Parse("{\"value\": { \"foo\": \"bar\", \"bar\": 3.4, \"baz\": { \"blip\": 9 } } }");
+using var jsonValues = JsonDocument.Parse("{\"value\": { \"foo\": \"bar\", \"bar\": 3.4, \"baz\": null }}");
 Dictionary<string, string> value = new() { { "foo", "bar" }, { "bar", "baz" }, { "baz", "bob" } };
 Dictionary<string, object?> parameters = new() { { "value", value } };
 

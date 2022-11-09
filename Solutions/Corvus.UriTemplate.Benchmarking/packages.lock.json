@@ -1137,6 +1137,16 @@
           "System.Collections.Immutable": "[7.0.0, )"
         }
       },
+      "corvus.uritemplates.resolvers.dictionaryofobject": {
+        "type": "Project",
+        "dependencies": {
+          "CommunityToolkit.HighPerformance": "[8.0.0, )",
+          "Corvus.UriTemplates": "[1.0.0, )",
+          "Microsoft.Extensions.ObjectPool": "[7.0.0-rc.1.22427.2, )",
+          "System.Buffers": "[4.5.1, )",
+          "System.Collections.Immutable": "[7.0.0-rc.1.22426.10, )"
+        }
+      },
       "corvus.uritemplates.resolvers.json": {
         "type": "Project",
         "dependencies": {

@@ -166,15 +166,15 @@ task . FullBuild
 
 # build extensibility tasks
 task RunFirst {}
-task PreInit {
+task PreInit {}
+task PostInit {}
+task PreVersion {}
+task PostVersion {}
+task PreBuild {
     Write-Host "Initialising submodule"
     exec { & git submodule init }
     exec { & git submodule update }
 }
-task PostInit {}
-task PreVersion {}
-task PostVersion {}
-task PreBuild {}
 task PostBuild {}
 task PreTest {
     # .net 7 bug workaround - ref: https://github.com/microsoft/vstest/issues/4014

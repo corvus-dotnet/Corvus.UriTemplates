@@ -24,7 +24,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Tavis.UriTemplates" Version="1.1.1" />
+		<PackageReference Include="Tavis.UriTemplates" Version="2.0.0" />
 	</ItemGroup>
 
 	<PropertyGroup>

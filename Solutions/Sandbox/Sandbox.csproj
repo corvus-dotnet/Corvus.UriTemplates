@@ -5,7 +5,8 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Corvus.UriTemplates.Resolvers.DictionaryOfObject\Corvus.UriTemplates.Resolvers.DictionaryOfObject.csproj" />

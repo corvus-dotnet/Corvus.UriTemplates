@@ -64,7 +64,7 @@ public class UriTemplateParameterExtraction
     /// A result, to ensure that the code under test does not get optimized out of existence.
     /// </returns>
     [Benchmark]
-    public IDictionary<string, object?>? ExtractParametersCorvusTavis()
+    public IDictionary<string, object>? ExtractParametersCorvusTavis()
     {
         return this.corvusTavisTemplate!.GetParameters(TavisUri);
     }

@@ -15,7 +15,7 @@ public class UriTemplateParameterSetting
 {
     private const string UriTemplate = "http://example.org/location{?value*}";
     private static readonly Dictionary<string, string> Value = new() { { "foo", "bar" }, { "bar", "baz" }, { "baz", "bob" } };
-    private static readonly Dictionary<string, object?> Parameters = new() { { "value", Value } };
+    private static readonly Dictionary<string, object?> InputParameters = new() { { "value", Value } };
 
     private readonly JsonDocument jsonValues = JsonDocument.Parse("{\"value\": { \"foo\": \"bar\", \"bar\": \"baz\", \"baz\": \"bob\" }}");
     private Tavis.UriTemplates.UriTemplate? tavisTemplate;
@@ -87,7 +87,7 @@ public class UriTemplateParameterSetting
     public void ResolveUriCorvusDictionary()
     {
         object? nullState = default;
-        DictionaryUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, Parameters, HandleResult, ref nullState);
+        DictionaryUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, InputParameters, HandleResult, ref nullState);
 #pragma warning disable RCS1163 // Unused parameter.
         static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
 #pragma warning restore RCS1163 // Unused parameter.

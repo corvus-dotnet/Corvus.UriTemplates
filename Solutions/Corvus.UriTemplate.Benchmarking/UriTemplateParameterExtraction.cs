@@ -60,10 +60,13 @@ public class UriTemplateParameterExtraction
     /// <summary>
     /// Extract parameters from a URI template using the Corvus implementation of the Tavis API.
     /// </summary>
+    /// <returns>
+    /// A result, to ensure that the code under test does not get optimized out of existence.
+    /// </returns>
     [Benchmark]
-    public void ExtractParametersCorvusTavis()
+    public IDictionary<string, object?>? ExtractParametersCorvusTavis()
     {
-        IDictionary<string, object?>? result = this.corvusTavisTemplate!.GetParameters(TavisUri);
+        return this.corvusTavisTemplate!.GetParameters(TavisUri);
     }
 
     /// <summary>
@@ -83,7 +86,9 @@ public class UriTemplateParameterExtraction
             // We can't use the state
         }
 
+#pragma warning disable RCS1163 // Unused parameter.
         static void HandleParameters(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref int state)
+#pragma warning restore RCS1163 // Unused parameter.
         {
             state++;
         }
@@ -98,7 +103,9 @@ public class UriTemplateParameterExtraction
         int state = 0;
         this.corvusTemplate!.ParseUri(Uri, HandleParameterMatching, ref state);
 
+#pragma warning disable RCS1163 // Unused parameter.
         static void HandleParameterMatching(bool reset, ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref int state)
+#pragma warning restore RCS1163 // Unused parameter.
         {
             if (reset)
             {

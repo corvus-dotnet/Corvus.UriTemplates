@@ -95,8 +95,10 @@ public static class JsonUriTemplateResolver
         return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(template, true, default, Nop, callback, ref state);
 #endif
 
+#pragma warning disable RCS1163 // Unused parameter.
         static void Nop(ReadOnlySpan<char> value, ref TState state)
         {
+#pragma warning restore RCS1163 // Unused parameter.
         }
     }
 }

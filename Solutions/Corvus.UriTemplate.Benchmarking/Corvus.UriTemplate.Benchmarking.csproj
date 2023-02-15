@@ -9,6 +9,11 @@
 		<IsPackable>false</IsPackable>
 		<DebugType>pdbonly</DebugType>
 		<DebugSymbols>true</DebugSymbols>
+
+    <!--
+    CA1822 - static all the things. Not helpful in benchmark projects where many things are invoked through invisible means.
+    -->
+    <NoWarn>$(NoWarn);CA1822</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -162,7 +162,7 @@ public static class UriTemplateParserFactory
         }
     }
 
-    private ref struct Consumer
+    private readonly ref struct Consumer
     {
         private readonly ReadOnlySpan<IUriTemplatePatternElement> elements;
 

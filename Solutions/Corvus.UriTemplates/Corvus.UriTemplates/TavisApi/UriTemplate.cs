@@ -14,7 +14,7 @@ namespace Corvus.UriTemplates.TavisApi;
 /// </summary>
 public class UriTemplate
 {
-    private static readonly Uri ComponentBaseUri = new Uri("https://localhost.com", UriKind.Absolute);
+    private static readonly Uri ComponentBaseUri = new("https://localhost.com", UriKind.Absolute);
     private readonly object lockObject = new();
     private readonly string template;
     private readonly Dictionary<string, object?> parameters;

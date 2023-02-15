@@ -72,7 +72,9 @@ public class UriTemplateParameterSetting
     {
         object? nullState = default;
         JsonUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, this.jsonValues.RootElement, HandleResult, ref nullState);
+#pragma warning disable RCS1163 // Unused parameter.
         static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
+#pragma warning restore RCS1163 // Unused parameter.
         {
             // NOP
         }
@@ -86,7 +88,9 @@ public class UriTemplateParameterSetting
     {
         object? nullState = default;
         DictionaryUriTemplateResolver.TryResolveResult(UriTemplate.AsSpan(), false, Parameters, HandleResult, ref nullState);
+#pragma warning disable RCS1163 // Unused parameter.
         static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
+#pragma warning restore RCS1163 // Unused parameter.
         {
             // NOP
         }

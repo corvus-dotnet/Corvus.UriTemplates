@@ -58,8 +58,7 @@ public static class UriTemplateExtensions
     {
         if (parametersObject != null)
         {
-            IEnumerable<PropertyInfo> properties;
-            properties = parametersObject.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            IEnumerable<PropertyInfo> properties = parametersObject.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
             foreach (PropertyInfo propinfo in properties)
             {
                 template.SetParameter(propinfo.Name, propinfo.GetValue(parametersObject, null));

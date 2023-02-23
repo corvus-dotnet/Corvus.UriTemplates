@@ -14,7 +14,7 @@ namespace Corvus.UriTemplates.TavisApi;
 /// </summary>
 public class UriTemplate
 {
-    private static readonly Uri ComponentBaseUri = new Uri("https://localhost.com", UriKind.Absolute);
+    private static readonly Uri ComponentBaseUri = new("https://localhost.com", UriKind.Absolute);
     private readonly object lockObject = new();
     private readonly string template;
     private readonly Dictionary<string, object?> parameters;
@@ -154,7 +154,7 @@ public class UriTemplate
     /// <param name="uri">The URI from which to get the parameters.</param>
     /// <param name="order">Whether to apply strict or relaxed query parameter ordering.</param>
     /// <returns>The parameters decomposed from the Uri.</returns>
-    public IDictionary<string, object?>? GetParameters(Uri uri, QueryStringParameterOrder order = QueryStringParameterOrder.Strict)
+    public IDictionary<string, object>? GetParameters(Uri uri, QueryStringParameterOrder order = QueryStringParameterOrder.Strict)
     {
         switch (order)
         {
@@ -171,7 +171,7 @@ public class UriTemplate
                         }
                     }
 
-                    var parameters = new Dictionary<string, object?>();
+                    var parameters = new Dictionary<string, object>();
 
                     if (parser.ParseUri(uri.OriginalString.AsSpan(), AddResults, ref parameters))
                     {
@@ -182,7 +182,7 @@ public class UriTemplate
                         return null;
                     }
 
-                    static void AddResults(bool reset, ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref Dictionary<string, object?> results)
+                    static void AddResults(bool reset, ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref Dictionary<string, object> results)
                     {
                         if (reset)
                         {
@@ -206,11 +206,11 @@ public class UriTemplate
                     string uriString = uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.Path | UriComponents.Fragment, UriFormat.UriEscaped);
                     var uriWithoutQuery = new Uri(uriString, UriKind.Absolute);
 
-                    IDictionary<string, object?> pathParameters = this.GetParameters(uriWithoutQuery) ?? new Dictionary<string, object?>(this.parameters.Comparer);
+                    IDictionary<string, object> pathParameters = this.GetParameters(uriWithoutQuery) ?? new Dictionary<string, object>(this.parameters.Comparer);
 
                     HashSet<string> parameterNames = this.GetParameterNamesHashSet();
 
-                    (HashSet<string> ParameterNames, IDictionary<string, object?> PathParameters) parameterState = (parameterNames, pathParameters);
+                    (HashSet<string> ParameterNames, IDictionary<string, object> PathParameters) parameterState = (parameterNames, pathParameters);
 
                     uri.GetQueryStringParameters(MatchParameterNames, ref parameterState);
 
@@ -221,7 +221,7 @@ public class UriTemplate
                 throw new ArgumentOutOfRangeException(nameof(order), order, null);
         }
 
-        static void MatchParameterNames(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref (HashSet<string> ParameterNames, IDictionary<string, object?> PathParameters) state)
+        static void MatchParameterNames(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref (HashSet<string> ParameterNames, IDictionary<string, object> PathParameters) state)
         {
             string name1 = name.ToString();
             if (state.ParameterNames.Contains(name1))

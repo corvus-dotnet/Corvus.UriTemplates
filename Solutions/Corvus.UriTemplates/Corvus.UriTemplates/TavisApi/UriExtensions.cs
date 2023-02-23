@@ -38,8 +38,8 @@ public static partial class UriExtensions
     /// <returns>The URI template, with templatized query string, and parameters populated from the values in the query string.</returns>
     public static UriTemplate MakeTemplate(this Uri uri)
     {
-        Dictionary<string, object?> parameters = uri.GetQueryStringParameters();
-        return uri.MakeTemplate(parameters);
+        Dictionary<string, object> parameters = uri.GetQueryStringParameters();
+        return uri.MakeTemplate((IDictionary<string, object?>)parameters);
     }
 
     /// <summary>
@@ -63,19 +63,19 @@ public static partial class UriExtensions
     }
 
     /// <summary>
-    /// Get the query sstring parameters from the given URI.
+    /// Get the query string parameters from the given URI.
     /// </summary>
     /// <param name="target">The target URI for which to recover the query string parameters.</param>
     /// <returns>A map of the query string parameters.</returns>
-    public static Dictionary<string, object?> GetQueryStringParameters(this Uri target)
+    public static Dictionary<string, object> GetQueryStringParameters(this Uri target)
     {
-        Dictionary<string, object?> parameters = new();
+        Dictionary<string, object> parameters = new();
 
         GetQueryStringParameters(target, AccumulateResults, ref parameters);
 
         return parameters;
 
-        static void AccumulateResults(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref Dictionary<string, object?> state)
+        static void AccumulateResults(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref Dictionary<string, object> state)
         {
             state.Add(name.ToString(), value.ToString());
         }

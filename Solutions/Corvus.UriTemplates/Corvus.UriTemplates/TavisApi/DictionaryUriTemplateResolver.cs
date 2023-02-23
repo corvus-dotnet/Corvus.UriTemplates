@@ -95,8 +95,10 @@ internal static class DictionaryUriTemplateResolver
         return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(template, true, EmptyDictionary, Nop, callback, ref state);
 #endif
 
+#pragma warning disable RCS1163 // Unused parameter.
         static void Nop(ReadOnlySpan<char> value, ref TState state)
         {
+#pragma warning restore RCS1163 // Unused parameter.
         }
     }
 }

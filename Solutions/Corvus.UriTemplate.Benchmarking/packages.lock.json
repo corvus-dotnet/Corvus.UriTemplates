@@ -4,11 +4,11 @@
     "net7.0": {
       "BenchmarkDotNet": {
         "type": "Direct",
-        "requested": "[0.13.4, )",
-        "resolved": "0.13.4",
-        "contentHash": "P6avThzS0HRJEjcCfnJdaMIujCMBoWQXSJiVYYFtMltrVeEMaIhg7r5qiGPyx9O2ZXuNpqIxVEg1JqgvfwnI2Q==",
+        "requested": "[0.13.5, )",
+        "resolved": "0.13.5",
+        "contentHash": "PiwINqvreKV7L+BQlaZ2qcJ90s88LbLqZoUWbKnEPzvmsWd4pUH58Yjp+mFn311n8Jz0Y0JsD+jWa+Kh67IG3A==",
         "dependencies": {
-          "BenchmarkDotNet.Annotations": "0.13.4",
+          "BenchmarkDotNet.Annotations": "0.13.5",
           "CommandLineParser": "2.4.3",
           "Gee.External.Capstone": "2.3.0",
           "Iced": "1.17.0",
@@ -22,29 +22,29 @@
       },
       "BenchmarkDotNet.Diagnostics.Windows": {
         "type": "Direct",
-        "requested": "[0.13.4, )",
-        "resolved": "0.13.4",
-        "contentHash": "psb/LnKJyKGSJKwfzpqdYxqV/SrcMie9BBzFGqyPrdO7LmJeZjicIbxrEIF1EkGjWK/ug89clr4gp/V5OWsxxA==",
+        "requested": "[0.13.5, )",
+        "resolved": "0.13.5",
+        "contentHash": "bNKJlIgUvEMBotiiHrEzw2xyCFlNiEfE14/EcBOEDSgYg+spzByVVv+totq9baxKUk5MhfAFhyzguBMiuoho3Q==",
         "dependencies": {
-          "BenchmarkDotNet": "0.13.4",
+          "BenchmarkDotNet": "0.13.5",
           "Microsoft.Diagnostics.Tracing.TraceEvent": "3.0.2"
         }
       },
       "Endjin.RecommendedPractices.GitHub": {
         "type": "Direct",
-        "requested": "[2.1.4, )",
-        "resolved": "2.1.4",
-        "contentHash": "SUBvnwWuKtklIv9NWqY9PI/J1nONyvcOlitIhUTq5Hk8K0QnBoISc1xTZTe0C0tOtUW1JIAZeEYwAAeuzQwtYg==",
+        "requested": "[2.1.5, )",
+        "resolved": "2.1.5",
+        "contentHash": "PoZqxrp7iYbSF0Vi2Wtj2sepxwZA3i4Yq9CGueralFhLYcHE60E3bQOwHLwWsv4oNf60FYJrr3RjFPa7pv1HyA==",
         "dependencies": {
-          "Endjin.RecommendedPractices": "2.1.4",
+          "Endjin.RecommendedPractices": "2.1.5",
           "Microsoft.SourceLink.GitHub": "1.1.1"
         }
       },
       "Roslynator.Analyzers": {
         "type": "Direct",
-        "requested": "[4.2.0, )",
-        "resolved": "4.2.0",
-        "contentHash": "3N8CNx1Q/Q5VDDL7qgfZRgTURyMqzHAkAB59AZKRnsOXoh2n9xRzhiBMIbJaUtBATmieECBx68GcjRn2xoNDug=="
+        "requested": "[4.3.0, )",
+        "resolved": "4.3.0",
+        "contentHash": "NZNaV9DAYGHKZ753WfhtBj8eoP40LLJsA6JQXdzhF87iTZAdbKCgp32mI3cnQF4TMXz7bk+CgzF/kDG+m+9bCg=="
       },
       "StyleCop.Analyzers": {
         "type": "Direct",
@@ -66,8 +66,8 @@
       },
       "BenchmarkDotNet.Annotations": {
         "type": "Transitive",
-        "resolved": "0.13.4",
-        "contentHash": "bc2q4S7xvOrqh7qRaMGyDdHVv8SITtN4crx5neIU289ra+LaP+OAmHPXxCY2djrnguZ8kfDddyJSg30wt7DvKg=="
+        "resolved": "0.13.5",
+        "contentHash": "ORcRi9/fnjRfINKiAnAgIsRlQ15Gj2Lki7AluHnAVMk/lTyQ2nwaa+F+ezW8f3tElBDoZql02+J2lIwHbu1eoA=="
       },
       "CommandLineParser": {
         "type": "Transitive",
@@ -76,13 +76,13 @@
       },
       "CommunityToolkit.HighPerformance": {
         "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "S5Iv1d5UJZNJLJbe/xzJmLqYJ2mhefbLAvhXCZEh3G4sFadUBuQZhQioE4oJG4enY69QMuJX3AX9+6P9rH1bMw=="
+        "resolved": "8.2.0",
+        "contentHash": "iKzsPiSnXoQUN5AoApYmdfnLn9osNb+YCLWRr5PFmrDEQVIu7OeOyf4DPvNBvbqbYLZCfvHozPkulyv6zBQsFw=="
       },
       "Endjin.RecommendedPractices": {
         "type": "Transitive",
-        "resolved": "2.1.4",
-        "contentHash": "3B8zpRU3LEwHNZvEU8NHhzFZKZDpVaI4sMhv8bXcEoLQhRvJiBKQ90hibZIz7veX1Zi9PXrsH11HzdZBQMmntQ==",
+        "resolved": "2.1.5",
+        "contentHash": "iEFt7iG7gaBi24xSkEPFywEkZkC4yoE61PEkh2Nspqe8zbwKifSn/05jRlvRnYnanXdON+AzTKxLZf28vgCOsA==",
         "dependencies": {
           "Microsoft.Build.Tasks.Git": "1.1.1"
         }
@@ -213,8 +213,8 @@
       },
       "Microsoft.Extensions.ObjectPool": {
         "type": "Transitive",
-        "resolved": "7.0.2",
-        "contentHash": "i1YHthDbI3Xy4Vy1wC2EP+Z/yDJjpv5ejxnPxQ4p7sC8jnpWVfR2/T23Iz9+lIz5aBSruu8dOChmwvUQ3qYXZw=="
+        "resolved": "7.0.5",
+        "contentHash": "uylNo8wuzAeqAJDyLDUM2JWSpTdCHTp11BXCsCO68LXnDjxwDM4PL6mJmho/+fJesWKdcJV5XB/Oa80wAJXnvQ=="
       },
       "Microsoft.Extensions.Options": {
         "type": "Transitive",
@@ -1040,8 +1040,8 @@
       },
       "System.Text.Json": {
         "type": "Transitive",
-        "resolved": "7.0.1",
-        "contentHash": "OtDEmCCiNl8JAduFKZ/r0Sw6XZNHwIicUYy/mXgMDGeOsZLshH37qi3oPRzFYiryVktiMoQLByMGPtRCEMYbeQ==",
+        "resolved": "7.0.2",
+        "contentHash": "/LZf/JrGyilojqwpaywb+sSz8Tew7ij4K/Sk+UW8AKfAK7KRhR6mKpKtTm06cYA7bCpGTWfYksIW+mVsdxPegQ==",
         "dependencies": {
           "System.Text.Encodings.Web": "7.0.0"
         }
@@ -1137,8 +1137,8 @@
       "corvus.uritemplates": {
         "type": "Project",
         "dependencies": {
-          "CommunityToolkit.HighPerformance": "[8.0.0, )",
-          "Microsoft.Extensions.ObjectPool": "[7.0.2, )",
+          "CommunityToolkit.HighPerformance": "[8.2.0, )",
+          "Microsoft.Extensions.ObjectPool": "[7.0.5, )",
           "System.Buffers": "[4.5.1, )",
           "System.Collections.Immutable": "[7.0.0, )"
         }
@@ -1146,9 +1146,9 @@
       "corvus.uritemplates.resolvers.dictionaryofobject": {
         "type": "Project",
         "dependencies": {
-          "CommunityToolkit.HighPerformance": "[8.0.0, )",
+          "CommunityToolkit.HighPerformance": "[8.2.0, )",
           "Corvus.UriTemplates": "[1.0.0, )",
-          "Microsoft.Extensions.ObjectPool": "[7.0.2, )",
+          "Microsoft.Extensions.ObjectPool": "[7.0.5, )",
           "System.Buffers": "[4.5.1, )",
           "System.Collections.Immutable": "[7.0.0, )"
         }
@@ -1156,12 +1156,12 @@
       "corvus.uritemplates.resolvers.json": {
         "type": "Project",
         "dependencies": {
-          "CommunityToolkit.HighPerformance": "[8.0.0, )",
+          "CommunityToolkit.HighPerformance": "[8.2.0, )",
           "Corvus.UriTemplates": "[1.0.0, )",
-          "Microsoft.Extensions.ObjectPool": "[7.0.2, )",
+          "Microsoft.Extensions.ObjectPool": "[7.0.5, )",
           "System.Buffers": "[4.5.1, )",
           "System.Collections.Immutable": "[7.0.0, )",
-          "System.Text.Json": "[7.0.1, )"
+          "System.Text.Json": "[7.0.2, )"
         }
       }
     }

@@ -27,12 +27,4 @@
 		<ProjectReference Include="..\Corvus.UriTemplates\Corvus.UriTemplates.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Update="StyleCop.Analyzers" Version="1.2.0-beta.435" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Update="Roslynator.Analyzers" Version="4.2.0" />
-	</ItemGroup>
-
 </Project>

@@ -13,27 +13,19 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.0.0" />
-		<PackageReference Include="Endjin.RecommendedPractices.GitHub" Version="2.1.4">
+		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.2.0" />
+		<PackageReference Include="Endjin.RecommendedPractices.GitHub" Version="2.1.5">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="System.Buffers" Version="4.5.1" />
 		<PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.ObjectPool" Version="7.0.2" />
-		<PackageReference Include="System.Text.Json" Version="7.0.1" />
+		<PackageReference Include="Microsoft.Extensions.ObjectPool" Version="7.0.5" />
+		<PackageReference Include="System.Text.Json" Version="7.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Corvus.UriTemplates\Corvus.UriTemplates.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Update="StyleCop.Analyzers" Version="1.2.0-beta.435" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Update="Roslynator.Analyzers" Version="4.2.0" />
 	</ItemGroup>
 
 </Project>

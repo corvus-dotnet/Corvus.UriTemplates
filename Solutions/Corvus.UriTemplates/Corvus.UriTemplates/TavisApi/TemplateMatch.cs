@@ -22,5 +22,5 @@ public class TemplateMatch
     /// <summary>
     /// Gets or sets the matched parameters.
     /// </summary>
-    public IDictionary<string, object?>? Parameters { get; set; }
+    public IDictionary<string, object>? Parameters { get; set; }
 }

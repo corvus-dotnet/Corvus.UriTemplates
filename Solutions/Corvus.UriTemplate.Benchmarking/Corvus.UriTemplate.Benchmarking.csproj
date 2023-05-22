@@ -9,6 +9,11 @@
 		<IsPackable>false</IsPackable>
 		<DebugType>pdbonly</DebugType>
 		<DebugSymbols>true</DebugSymbols>
+
+    <!--
+    CA1822 - static all the things. Not helpful in benchmark projects where many things are invoked through invisible means.
+    -->
+    <NoWarn>$(NoWarn);CA1822</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -18,9 +23,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="BenchmarkDotNet" Version="0.13.4" />
-		<PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.13.4" />
-		<PackageReference Include="Endjin.RecommendedPractices.GitHub" Version="2.1.4">
+		<PackageReference Include="BenchmarkDotNet" Version="0.13.5" />
+		<PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.13.5" />
+		<PackageReference Include="Endjin.RecommendedPractices.GitHub" Version="2.1.5">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
@@ -31,9 +36,5 @@
 		<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
 		<RestoreLockedMode Condition="$(ContinuousIntegrationBuild) == 'true'">true</RestoreLockedMode>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<PackageReference Update="Roslynator.Analyzers" Version="4.2.0" />
-	</ItemGroup>
 
 </Project>

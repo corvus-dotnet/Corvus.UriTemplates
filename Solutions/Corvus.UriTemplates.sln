@@ -13,7 +13,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Corvus.UriTemplates.Resolve
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Corvus.UriTemplates.Resolvers.DictionaryOfObject", "Corvus.UriTemplates.Resolvers.DictionaryOfObject\Corvus.UriTemplates.Resolvers.DictionaryOfObject.csproj", "{C77AE102-65C4-4C64-8B53-B2476EC80280}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sandbox", "Sandbox\Sandbox.csproj", "{302F8634-2171-43DB-B5DD-5B01BE6026C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sandbox", "Sandbox\Sandbox.csproj", "{302F8634-2171-43DB-B5DD-5B01BE6026C2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DevOps", "DevOps", "{A903B615-2FB5-40CB-958E-CC3C2294A931}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		..\.gitignore = ..\.gitignore
+		..\azure-pipelines.yml = ..\azure-pipelines.yml
+		..\GitVersion.yml = ..\GitVersion.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

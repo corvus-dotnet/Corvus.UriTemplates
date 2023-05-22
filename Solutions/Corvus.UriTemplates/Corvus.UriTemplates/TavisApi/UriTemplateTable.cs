@@ -9,7 +9,7 @@ namespace Corvus.UriTemplates.TavisApi;
 /// </summary>
 public class UriTemplateTable
 {
-    private readonly Dictionary<string, UriTemplate> templates = new Dictionary<string, UriTemplate>();
+    private readonly Dictionary<string, UriTemplate> templates = new();
 
     /// <summary>
     /// Get the URI template with the specified key.
@@ -20,8 +20,7 @@ public class UriTemplateTable
     {
         get
         {
-            UriTemplate? value;
-            if (this.templates.TryGetValue(key, out value))
+            if (this.templates.TryGetValue(key, out UriTemplate? value))
             {
                 return value;
             }
@@ -52,7 +51,7 @@ public class UriTemplateTable
     {
         foreach (KeyValuePair<string, UriTemplate> template in this.templates)
         {
-            IDictionary<string, object?>? parameters = template.Value.GetParameters(url, order);
+            IDictionary<string, object>? parameters = template.Value.GetParameters(url, order);
             if (parameters != null)
             {
                 return new TemplateMatch() { Key = template.Key, Parameters = parameters, Template = template.Value };

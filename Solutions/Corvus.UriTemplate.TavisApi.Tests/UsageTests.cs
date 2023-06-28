@@ -146,7 +146,7 @@ namespace UriTemplateTests
             //template.SetParameter("bar", "yo");
             //template.SetParameter("blar", "yuck");
             var uriString = template.Resolve();
-            Assert.Equal("http://example.org/foo{?bar,baz}", uriString);
+            Assert.Equal("http://example.org/foo{?bar}{&baz}", uriString);
         }
 
         [Fact]

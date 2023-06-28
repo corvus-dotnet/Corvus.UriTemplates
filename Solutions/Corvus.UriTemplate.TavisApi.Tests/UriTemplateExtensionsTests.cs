@@ -252,7 +252,55 @@ namespace UriTemplateTests
             })
             .Resolve();
 
-            Assert.Equal("http://dev.example.org/v2/customers{?active,country}", url);
+            Assert.Equal("http://dev.example.org/v2/customers{?active}{&country}", url);
+        }
+
+        [Fact]
+        public void PartiallyParametersFromAnObject()
+        {
+
+            var url = new UriTemplate("http://{environment}.example.org/{version}/customers{?active,country}", resolvePartially: true)
+            .AddParameters(new {
+                environment = "dev",
+                version = "v2",
+                active = "foo"
+            })
+            .Resolve();
+
+            Assert.Equal("http://dev.example.org/v2/customers?active=foo{&country}", url);
+        }
+
+        [Fact]
+        public void PartiallyParametersFromAnObjectMissingSecondOfThree()
+        {
+
+            var url = new UriTemplate("http://{environment}.example.org/{version}/customers{?active,country,thing}", resolvePartially: true)
+            .AddParameters(new {
+                environment = "dev",
+                version = "v2",
+                active = "foo",
+                thing = "bar"
+            })
+            .Resolve();
+
+            Assert.Equal("http://dev.example.org/v2/customers?active=foo{&country}&thing=bar", url);
+        }
+
+
+        [Fact]
+        public void PartiallyParametersFromAnObjectMissingThirdOfThree()
+        {
+
+            var url = new UriTemplate("http://{environment}.example.org/{version}/customers{?active,country,thing}", resolvePartially: true)
+            .AddParameters(new {
+                environment = "dev",
+                version = "v2",
+                active = "foo",
+                country = "bar"
+            })
+            .Resolve();
+
+            Assert.Equal("http://dev.example.org/v2/customers?active=foo&country=bar{&thing}", url);
         }
 
 

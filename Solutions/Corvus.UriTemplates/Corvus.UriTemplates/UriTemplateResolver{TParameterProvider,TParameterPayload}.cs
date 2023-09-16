@@ -251,6 +251,7 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
         bool multivariableExpression = false;
         int varNameStart = -1;
         int varNameEnd = -1;
+        VariableProcessingState success = VariableProcessingState.Success;
 
         var varSpec = new VariableSpecification(op, ReadOnlySpan<char>.Empty);
         for (int i = firstChar; i < currentExpression.Length; i++)
@@ -295,10 +296,11 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
                 case ',':
                     varSpec.VarName = currentExpression[varNameStart..varNameEnd];
                     multivariableExpression = true;
+
 #if NET6_0
-                    VariableProcessingState success = ProcessVariable(parameterProvider, ref varSpec, output, multivariableExpression, resolvePartially, parameters, parameterNameCallback, ref state);
+                    success = ProcessVariable(parameterProvider, ref varSpec, output, multivariableExpression, resolvePartially, parameters, parameterNameCallback, ref state);
 #else
-                    VariableProcessingState success = ProcessVariable(ref varSpec, output, multivariableExpression, resolvePartially, parameters, parameterNameCallback, ref state);
+                    success = ProcessVariable(ref varSpec, output, multivariableExpression, resolvePartially, parameters, parameterNameCallback, ref state);
 #endif
                     bool isFirst = varSpec.First;
 
@@ -309,11 +311,6 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
                     if ((success == VariableProcessingState.Success) || !isFirst || resolvePartially)
                     {
                         varSpec.First = false;
-                    }
-
-                    if ((success == VariableProcessingState.NotProcessed) && resolvePartially)
-                    {
-                        output.Write(',');
                     }
 
                     break;
@@ -353,11 +350,6 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
             return false;
         }
 
-        if (multivariableExpression && resolvePartially)
-        {
-            output.Write('}');
-        }
-
         return true;
     }
 
@@ -386,10 +378,16 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
                 {
                     if (varSpec.First)
                     {
-                        output.Write('{');
+                        output.Write("{");
+                    }
+                    else
+                    {
+                        output.Write("{&");
                     }
 
                     varSpec.CopyTo(output);
+
+                    output.Write('}');
                 }
                 else
                 {

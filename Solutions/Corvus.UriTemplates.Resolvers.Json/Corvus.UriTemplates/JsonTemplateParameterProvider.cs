@@ -24,11 +24,7 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
     ///     <see cref="VariableProcessingState.Success"/> if the variable was successfully processed,
     ///     <see cref="VariableProcessingState.NotProcessed"/> if the parameter was not present, or
     ///     <see cref="VariableProcessingState.Failure"/> if the parmeter could not be processed because it was incompatible with the variable specification in the template.</returns>
-#if NET6_0
     public VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in JsonElement parameters, IBufferWriter<char> output)
-#else
-    public static VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in JsonElement parameters, IBufferWriter<char> output)
-#endif
     {
         if (!parameters.TryGetProperty(variableSpecification.VarName, out JsonElement value)
                 || IsNullOrUndefined(value)
@@ -244,30 +240,30 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
     /// <param name="allowReserved">Whether to allow reserved characters.</param>
     private static void AppendValue(IBufferWriter<char> output, JsonElement value, int prefixLength, bool allowReserved)
     {
-        if (value.ValueKind == JsonValueKind.String)
+        switch (value.ValueKind)
         {
-            value.TryGetValue(ProcessString, new AppendValueState(output, prefixLength, allowReserved), out bool _);
-        }
-        else if (value.ValueKind == JsonValueKind.True)
-        {
-            output.Write("true");
-        }
-        else if (value.ValueKind == JsonValueKind.False)
-        {
-            output.Write("false");
-        }
-        else if (value.ValueKind == JsonValueKind.Null)
-        {
-            output.Write("null");
-        }
-        else if (value.ValueKind == JsonValueKind.Number)
-        {
-            double valueNumber = value.GetDouble();
+            case JsonValueKind.String:
+                value.TryGetValue(ProcessString, new AppendValueState(output, prefixLength, allowReserved), out bool _);
+                break;
+            case JsonValueKind.True:
+                output.Write("true");
+                break;
+            case JsonValueKind.False:
+                output.Write("false");
+                break;
+            case JsonValueKind.Null:
+                output.Write("null");
+                break;
+            case JsonValueKind.Number:
+                {
+                    double valueNumber = value.GetDouble();
 
-            // The maximum number of digits in a double precision number is 1074; we allocate a little above this
-            Span<char> buffer = stackalloc char[1100];
-            valueNumber.TryFormat(buffer, out int written);
-            output.Write(buffer[..written]);
+                    // The maximum number of digits in a double precision number is 1074; we allocate a little above this
+                    Span<char> buffer = stackalloc char[1100];
+                    valueNumber.TryFormat(buffer, out int written);
+                    output.Write(buffer[..written]);
+                    break;
+                }
         }
     }
 

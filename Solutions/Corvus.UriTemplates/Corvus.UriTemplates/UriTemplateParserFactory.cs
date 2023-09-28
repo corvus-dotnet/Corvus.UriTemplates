@@ -3,9 +3,10 @@
 // </copyright>
 
 using System.Buffers;
+#if NET6_0
 using System.Collections.Immutable;
+#endif
 using System.Text.RegularExpressions;
-using CommunityToolkit.HighPerformance.Buffers;
 
 namespace Corvus.UriTemplates;
 
@@ -70,7 +71,7 @@ public static class UriTemplateParserFactory
         return new UriParser(CreateParserElements(uriTemplate.AsSpan()));
     }
 
-    private static IEnumerable<IUriTemplatePatternElement> CreateParserElements(ReadOnlySpan<char> uriTemplate)
+    private static IUriTemplatePatternElement[] CreateParserElements(ReadOnlySpan<char> uriTemplate)
     {
         string template = TemplateConversion.Replace(uriTemplate.ToString(), @"$+\?");
         ReadOnlySpan<char> templateSpan = template.AsSpan();
@@ -95,7 +96,7 @@ public static class UriTemplateParserFactory
             elements.Add(new LiteralSequence(templateSpan[lastIndex..]));
         }
 
-        return elements;
+        return elements.ToArray();
 
         static int UnescapeQuestionMarkInPlace(Span<char> literal)
         {
@@ -229,14 +230,13 @@ public static class UriTemplateParserFactory
     /// <summary>
     /// Parses a uri using a set of <see cref="IUriTemplatePatternElement"/>.
     /// </summary>
-    private sealed class UriParser : IUriTemplateParser
+    private readonly struct UriParser : IUriTemplateParser
     {
         private readonly IUriTemplatePatternElement[] elements;
 
-        public UriParser(IEnumerable<IUriTemplatePatternElement> elements)
+        public UriParser(IUriTemplatePatternElement[] elements)
         {
-            var list = elements.ToList();
-            this.elements = list.ToArray();
+            this.elements = elements;
         }
 
         /// <inheritdoc/>

@@ -230,7 +230,7 @@ public static class UriTemplateParserFactory
     /// <summary>
     /// Parses a uri using a set of <see cref="IUriTemplatePatternElement"/>.
     /// </summary>
-    private readonly struct UriParser : IUriTemplateParser
+    private sealed class UriParser : IUriTemplateParser
     {
         private readonly IUriTemplatePatternElement[] elements;
 

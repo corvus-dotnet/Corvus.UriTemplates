@@ -109,7 +109,7 @@ internal struct ParameterCache
     /// <param name="name">The name of the parameter.</param>
     /// <param name="value">The value of the parameter.</param>
     /// <returns><see langword="true"/> if the parameter exists, otherwise false.</returns>
-    internal bool TryGetParameter(ReadOnlySpan<char> name, out ReadOnlySpan<char> value)
+    internal readonly bool TryGetParameter(ReadOnlySpan<char> name, out ReadOnlySpan<char> value)
     {
         for (int i = 0; i < this.written; ++i)
         {
@@ -140,7 +140,7 @@ internal struct ParameterCache
     /// <typeparam name="TState">The type of the state for enumeration.</typeparam>
     /// <param name="callback">The callback that will be passed the parameters to enumerate.</param>
     /// <param name="state">The initial state.</param>
-    internal void EnumerateParameters<TState>(EnumerateParametersCallback<TState> callback, ref TState state)
+    internal readonly void EnumerateParameters<TState>(EnumerateParametersCallback<TState> callback, ref TState state)
     {
         for (int i = 0; i < this.written; ++i)
         {
@@ -189,7 +189,9 @@ internal struct ParameterCache
     /// <param name="value">The value of the parameter to add.</param>
     private void Add(ReadOnlySpan<char> name, ReadOnlySpan<char> value)
     {
-        char[] entryArray = name.Length + value.Length > 0 ? ArrayPool<char>.Shared.Rent(name.Length + value.Length) : Array.Empty<char>();
+#pragma warning disable SA1010 // Opening square brackets should be spaced correctly - analyzers not yet up to date
+        char[] entryArray = name.Length + value.Length > 0 ? ArrayPool<char>.Shared.Rent(name.Length + value.Length) : [];
+#pragma warning restore SA1010 // Opening square brackets should be spaced correctly
         name.CopyTo(entryArray);
         value.CopyTo(entryArray.AsSpan(name.Length));
 
@@ -202,7 +204,7 @@ internal struct ParameterCache
         this.written++;
     }
 
-    private void ResetItems()
+    private readonly void ResetItems()
     {
         for (int i = 0; i < this.written; ++i)
         {
@@ -210,28 +212,17 @@ internal struct ParameterCache
         }
     }
 
-    private readonly struct CacheEntry
+    private readonly struct CacheEntry(char[] entry, int nameLength, int valueLength)
     {
-        private readonly char[] entry;
-        private readonly int nameLength;
-        private readonly int valueLength;
+        public ReadOnlySpan<char> Name => nameLength > 0 ? entry.AsSpan(0, nameLength) : default;
 
-        public CacheEntry(in char[] entry, int nameLength, int valueLength)
-        {
-            this.entry = entry;
-            this.nameLength = nameLength;
-            this.valueLength = valueLength;
-        }
-
-        public ReadOnlySpan<char> Name => this.nameLength > 0 ? this.entry.AsSpan(0, this.nameLength) : Span<char>.Empty;
-
-        public ReadOnlySpan<char> Value => this.valueLength > 0 ? this.entry.AsSpan(this.nameLength, this.valueLength) : Span<char>.Empty;
+        public ReadOnlySpan<char> Value => valueLength > 0 ? entry.AsSpan(nameLength, valueLength) : default;
 
         public void Return()
         {
-            if (this.entry.Length > 0)
+            if (entry.Length > 0)
             {
-                ArrayPool<char>.Shared.Return(this.entry);
+                ArrayPool<char>.Shared.Return(entry);
             }
         }
     }

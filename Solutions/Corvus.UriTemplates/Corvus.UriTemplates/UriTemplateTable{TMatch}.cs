@@ -12,17 +12,19 @@ namespace Corvus.UriTemplates;
 /// <typeparam name="TMatch">The type of the value to be matched.</typeparam>
 public sealed class UriTemplateTable<TMatch>
 {
-    private readonly ParserAndMatch[] entries;
+    private readonly IUriTemplateParser[] parsers;
+    private readonly TMatch[] matches;
 
-    private UriTemplateTable(ParserAndMatch[] entries)
+    private UriTemplateTable(IUriTemplateParser[] parsers, TMatch[] matches)
     {
-        this.entries = entries;
+        this.parsers = parsers;
+        this.matches = matches;
     }
 
     /// <summary>
     /// Gets the number of entries in the table.
     /// </summary>
-    public int Length => this.entries.Length;
+    public int Length => this.parsers.Length;
 
     /// <summary>
     /// Try to match the uri against the URI templates in the table.
@@ -63,12 +65,12 @@ public sealed class UriTemplateTable<TMatch>
     /// </remarks>
     public bool TryMatch(ReadOnlySpan<char> uri, int initialParameterCount, out TemplateMatchResult<TMatch> match)
     {
-        for (int i = 0; i < this.entries.Length; ++i)
+        for (int i = 0; i < this.parsers.Length; ++i)
         {
-            ref ParserAndMatch entry = ref this.entries[i];
-            if (entry.Parser.IsMatch(uri))
+            IUriTemplateParser parser = this.parsers[i];
+            if (parser.IsMatch(uri))
             {
-                match = new(entry.Match, entry.Parser);
+                match = new(this.matches[i], parser);
                 return true;
             }
         }
@@ -79,25 +81,20 @@ public sealed class UriTemplateTable<TMatch>
     }
 
     /// <summary>
-    /// A <see cref="IUriTemplateParser"/> and the instance to provide when it is matched.
-    /// </summary>
-    /// <param name="Parser">The parser.</param>
-    /// <param name="Match">The corresponding match.</param>
-    private readonly record struct ParserAndMatch(IUriTemplateParser Parser, TMatch Match);
-
-    /// <summary>
     /// A builder for a <see cref="UriTemplateTable{TMatch}"/>.
     /// </summary>
     public class Builder
     {
-        private readonly List<ParserAndMatch> builder;
+        private readonly List<IUriTemplateParser> parsers;
+        private readonly List<TMatch> matches;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Builder"/> struct.
         /// </summary>
         internal Builder()
         {
-            this.builder = new List<ParserAndMatch>();
+            this.parsers = new();
+            this.matches = new();
         }
 
         /// <summary>
@@ -110,13 +107,14 @@ public sealed class UriTemplateTable<TMatch>
         /// </remarks>
         internal Builder(int initialCapacity)
         {
-            this.builder = new List<ParserAndMatch>(initialCapacity);
+            this.parsers = new(initialCapacity);
+            this.matches = new(initialCapacity);
         }
 
         /// <summary>
         /// Gets the length of the table builder.
         /// </summary>
-        public int Count => this.builder.Count;
+        public int Count => this.parsers.Count;
 
         /// <summary>
         /// Add a uri template and its corresponding match.
@@ -125,7 +123,8 @@ public sealed class UriTemplateTable<TMatch>
         /// <param name="match">The corresponding match to provide if the parser matches.</param>
         public void Add(string uriTemplate, TMatch match)
         {
-            this.builder.Add(new(UriTemplateParserFactory.CreateParser(uriTemplate), match));
+            this.parsers.Add(UriTemplateParserFactory.CreateParser(uriTemplate));
+            this.matches.Add(match);
         }
 
         /// <summary>
@@ -135,7 +134,8 @@ public sealed class UriTemplateTable<TMatch>
         /// <param name="match">The corresponding match to provide if the parser matches.</param>
         public void Add(ReadOnlySpan<char> uriTemplate, TMatch match)
         {
-            this.builder.Add(new(UriTemplateParserFactory.CreateParser(uriTemplate), match));
+            this.parsers.Add(UriTemplateParserFactory.CreateParser(uriTemplate));
+            this.matches.Add(match);
         }
 
         /// <summary>
@@ -145,7 +145,8 @@ public sealed class UriTemplateTable<TMatch>
         /// <param name="match">The corresponding match to provide if the parser matches.</param>
         public void Add(IUriTemplateParser parser, TMatch match)
         {
-            this.builder.Add(new(parser, match));
+            this.parsers.Add(parser);
+            this.matches.Add(match);
         }
 
         /// <summary>
@@ -154,7 +155,9 @@ public sealed class UriTemplateTable<TMatch>
         /// <returns>The resulting table.</returns>
         public UriTemplateTable<TMatch> ToTable()
         {
-            return new([.. this.builder]);
+#pragma warning disable SA1010 // Opening square brackets should be spaced correctly - analyzers not up to date
+            return new([.. this.parsers], [.. this.matches]);
+#pragma warning restore SA1010 // Opening square brackets should be spaced correctly
         }
     }
 }

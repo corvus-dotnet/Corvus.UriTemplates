@@ -51,9 +51,7 @@ public static class UriTemplateParserFactory
     /// </remarks>
     public static IUriTemplateParser CreateParser(ReadOnlySpan<char> uriTemplate)
     {
-        return new UriParser(
-            CreateParserElements(uriTemplate),
-            new Regex(UriTemplateRegexBuilder.CreateMatchingRegex(uriTemplate), RegexOptions.Compiled, TimeSpan.FromSeconds(3)));
+        return new UriParser(CreateParserElements(uriTemplate));
     }
 
     /// <summary>
@@ -67,9 +65,7 @@ public static class UriTemplateParserFactory
     /// </remarks>
     public static IUriTemplateParser CreateParser(string uriTemplate)
     {
-        return new UriParser(
-            CreateParserElements(uriTemplate.AsSpan()),
-            new Regex(UriTemplateRegexBuilder.CreateMatchingRegex(uriTemplate), RegexOptions.Compiled, TimeSpan.FromSeconds(3)));
+        return new UriParser(CreateParserElements(uriTemplate.AsSpan()));
     }
 
     private static IUriTemplatePatternElement[] CreateParserElements(ReadOnlySpan<char> uriTemplate)
@@ -189,7 +185,7 @@ public static class UriTemplateParserFactory
                 // We didn't match at that location, so tell the parameter callback to reset the accumulated parameters,
                 // and advance a character
                 parameterCallback?.Invoke(true, default, default, ref state);
-                charsConsumed++;
+                charsConsumed += consumedBySequence > 0 ? consumedBySequence : 1;
             }
 
             if (charsConsumed == segmentLength)
@@ -237,18 +233,22 @@ public static class UriTemplateParserFactory
     private sealed class UriParser : IUriTemplateParser
     {
         private readonly IUriTemplatePatternElement[] elements;
-        private readonly Regex regex;
 
-        public UriParser(in IUriTemplatePatternElement[] elements, Regex regex)
+        public UriParser(in IUriTemplatePatternElement[] elements)
         {
             this.elements = elements;
-            this.regex = regex;
         }
 
         /// <inheritdoc/>
         public bool IsMatch(in ReadOnlySpan<char> uri)
         {
-            return this.regex.IsMatch(uri);
+            Consumer sequence = new(this.elements.AsSpan());
+            int state = 0;
+            bool result = sequence.Consume(uri, out int charsConsumed, null, ref state);
+
+            // We have successfully parsed the uri if all of our elements successfully consumed
+            // the contents they were expecting, and we have no characters left over.
+            return result && charsConsumed == uri.Length;
         }
 
         /// <inheritdoc/>

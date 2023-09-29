@@ -15,13 +15,37 @@ internal struct ParameterCache
     private readonly int bufferIncrement;
     private CacheEntry[] items;
     private int written;
-    private bool returned = false;
+    private bool rented = false;
 
     private ParameterCache(int initialCapacity)
     {
         this.bufferIncrement = initialCapacity;
         this.items = ArrayPool<CacheEntry>.Shared.Rent(initialCapacity);
         this.written = 0;
+        this.rented = true;
+    }
+
+    /// <summary>
+    /// Gets the parameter with the given name.
+    /// </summary>
+    /// <param name="name">The name of the parameter to acquire.</param>
+    /// <returns>The value of the named parameter.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">A parameter of the given name was not found in the collection.</exception>
+    internal readonly ReadOnlySpan<char> this[ReadOnlySpan<char> name]
+    {
+        get
+        {
+            for (int i = 0; i < this.written; ++i)
+            {
+                ref CacheEntry item = ref this.items[i];
+                if (item.Name.Equals(name, StringComparison.Ordinal))
+                {
+                    return item.Value;
+                }
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(name), "A parameter of the given name was not found.");
+        }
     }
 
     /// <summary>
@@ -32,25 +56,25 @@ internal struct ParameterCache
     /// <param name="uri">The uri to parse.</param>
     /// <param name="initialCapacity">The initial cache size, which should be greater than or equal to the expected number of parameters.
     /// It also provides the increment for the cache size should it be exceeded.</param>
-    /// <param name="callback">The callback to recieve the enumerated parameters.</param>
+    /// <param name="callback">The callback to receive the enumerated parameters.</param>
     /// <param name="state">The state for the callback.</param>
     /// <returns><see langword="true"/> if the parser was successful, otherwise <see langword="false"/>.</returns>
     public static bool EnumerateParameters<TState>(IUriTemplateParser parser, ReadOnlySpan<char> uri, int initialCapacity, EnumerateParametersCallback<TState> callback, ref TState state)
     {
         ParameterCache cache = Rent(initialCapacity);
-        if (parser.ParseUri(uri, HandleParameters, ref cache))
+        try
         {
-            for (int i = 0; i < cache.written; ++i)
+            if (parser.ParseUri(uri, HandleParameters, ref cache))
             {
-                CacheEntry item = cache.items[i];
-                callback(item.Name, item.Value, ref state);
+                cache.EnumerateParameters(callback, ref state);
+                return true;
             }
-
+        }
+        finally
+        {
             cache.Return();
-            return true;
         }
 
-        cache.Return();
         return false;
     }
 
@@ -60,9 +84,82 @@ internal struct ParameterCache
     /// <param name="initialCapacity">The initial capacity of the cache.</param>
     /// <returns>An instance of a parameter cache.</returns>
     /// <remarks>When you have finished with the cache, call <see cref="Return()"/> to relinquish any internal resources.</remarks>
-    private static ParameterCache Rent(int initialCapacity)
+    internal static ParameterCache Rent(int initialCapacity)
     {
         return new(initialCapacity);
+    }
+
+    /// <summary>
+    /// Tries to match the URI using the parser.
+    /// </summary>
+    /// <param name="parser">The uri template parser with which to match.</param>
+    /// <param name="uri">The URI to match.</param>
+    /// <returns><see langword="true"/> if the uri matches the template.</returns>
+    /// <remarks>
+    /// The parameter cache will contain the matched parameters if the parser matched successfully.
+    /// </remarks>
+    internal bool TryMatch(IUriTemplateParser parser, ReadOnlySpan<char> uri)
+    {
+        return parser.ParseUri(uri, HandleParameters, ref this);
+    }
+
+    /// <summary>
+    /// Try to get a parameter from the cache.
+    /// </summary>
+    /// <param name="name">The name of the parameter.</param>
+    /// <param name="value">The value of the parameter.</param>
+    /// <returns><see langword="true"/> if the parameter exists, otherwise false.</returns>
+    internal bool TryGetParameter(ReadOnlySpan<char> name, out ReadOnlySpan<char> value)
+    {
+        for (int i = 0; i < this.written; ++i)
+        {
+            ref CacheEntry item = ref this.items[i];
+            if (item.Name.Equals(name, StringComparison.Ordinal))
+            {
+                value = item.Value;
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Reset the items written.
+    /// </summary>
+    internal void Reset()
+    {
+        this.ResetItems();
+        this.written = 0;
+    }
+
+    /// <summary>
+    /// Enumerate the parameters in the cache.
+    /// </summary>
+    /// <typeparam name="TState">The type of the state for enumeration.</typeparam>
+    /// <param name="callback">The callback that will be passed the parameters to enumerate.</param>
+    /// <param name="state">The initial state.</param>
+    internal void EnumerateParameters<TState>(EnumerateParametersCallback<TState> callback, ref TState state)
+    {
+        for (int i = 0; i < this.written; ++i)
+        {
+            ref CacheEntry item = ref this.items[i];
+            callback(item.Name, item.Value, ref state);
+        }
+    }
+
+    /// <summary>
+    /// Return the resources used by the cache.
+    /// </summary>
+    internal void Return()
+    {
+        if (this.rented)
+        {
+            this.ResetItems();
+            ArrayPool<CacheEntry>.Shared.Return(this.items);
+            this.rented = false;
+        }
     }
 
     /// <summary>
@@ -105,28 +202,6 @@ internal struct ParameterCache
         this.written++;
     }
 
-    /// <summary>
-    /// Reset the items written.
-    /// </summary>
-    private void Reset()
-    {
-        this.ResetItems();
-        this.written = 0;
-    }
-
-    /// <summary>
-    /// Return the resources used by the cache.
-    /// </summary>
-    private void Return()
-    {
-        if (!this.returned)
-        {
-            this.ResetItems();
-            ArrayPool<CacheEntry>.Shared.Return(this.items);
-            this.returned = true;
-        }
-    }
-
     private void ResetItems()
     {
         for (int i = 0; i < this.written; ++i)
@@ -148,9 +223,9 @@ internal struct ParameterCache
             this.valueLength = valueLength;
         }
 
-        public Span<char> Name => this.nameLength > 0 ? this.entry.AsSpan(0, this.nameLength) : Span<char>.Empty;
+        public ReadOnlySpan<char> Name => this.nameLength > 0 ? this.entry.AsSpan(0, this.nameLength) : Span<char>.Empty;
 
-        public Span<char> Value => this.valueLength > 0 ? this.entry.AsSpan(this.nameLength, this.valueLength) : Span<char>.Empty;
+        public ReadOnlySpan<char> Value => this.valueLength > 0 ? this.entry.AsSpan(this.nameLength, this.valueLength) : Span<char>.Empty;
 
         public void Return()
         {

@@ -59,6 +59,11 @@ public class UriTemplateTableMatching
 
         this.corvusTemplateTable = builder.ToTable();
 
+        // Warm up to create all the parsers etc.
+        this.MatchTavis();
+        this.MatchCorvusTavis();
+        this.MatchCorvus();
+
         return Task.CompletedTask;
     }
 

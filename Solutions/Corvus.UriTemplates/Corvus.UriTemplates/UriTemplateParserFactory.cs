@@ -3,9 +3,6 @@
 // </copyright>
 
 using System.Buffers;
-#if NET6_0
-using System.Collections.Immutable;
-#endif
 using System.Text.RegularExpressions;
 
 namespace Corvus.UriTemplates;
@@ -184,7 +181,7 @@ public static class UriTemplateParserFactory
             {
                 // We didn't match at that location, so tell the parameter callback to reset the accumulated parameters,
                 // and advance a character
-                parameterCallback?.Invoke(true, ReadOnlySpan<char>.Empty, ReadOnlySpan<char>.Empty, ref state);
+                parameterCallback?.Invoke(true, default, default, ref state);
                 charsConsumed++;
             }
 
@@ -192,7 +189,7 @@ public static class UriTemplateParserFactory
             {
                 // We didn't find a match, so we tell the parameter callback to reset the accumulated parameters,
                 // and reset the characters consumed.
-                parameterCallback?.Invoke(true, ReadOnlySpan<char>.Empty, ReadOnlySpan<char>.Empty, ref state);
+                parameterCallback?.Invoke(true, default, default, ref state);
                 charsConsumed = 0;
                 return false;
             }
@@ -240,6 +237,18 @@ public static class UriTemplateParserFactory
         }
 
         /// <inheritdoc/>
+        public bool IsMatch(ReadOnlySpan<char> uri)
+        {
+            Consumer sequence = new(this.elements.AsSpan());
+            int state = 0;
+            bool result = sequence.Consume(uri, out int charsConsumed, null, ref state);
+
+            // We have successfully parsed the uri if all of our elements successfully consumed
+            // the contents they were expecting, and we have no characters left over.
+            return result && charsConsumed == uri.Length;
+        }
+
+        /// <inheritdoc/>
         public bool ParseUri<TState>(ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state)
         {
             Consumer sequence = new(this.elements.AsSpan());
@@ -277,7 +286,6 @@ public static class UriTemplateParserFactory
         }
     }
 
-#if NET8_0_OR_GREATER
     /// <summary>
     /// Represents an expression sequence in a URI template.
     /// </summary>
@@ -596,324 +604,4 @@ public static class UriTemplateParserFactory
             return true;
         }
     }
-#else
-    /// <summary>
-    /// Represents an expression sequence in a URI template.
-    /// </summary>
-    private sealed class ExpressionSequence : IUriTemplatePatternElement
-    {
-        private static readonly ReadOnlyMemory<char> FragmentTerminators = ",".AsMemory();
-        private static readonly ReadOnlyMemory<char> SlashTerminators = "/?".AsMemory();
-        private static readonly ReadOnlyMemory<char> QueryTerminators = "&#".AsMemory();
-        private static readonly ReadOnlyMemory<char> SemicolonTerminators = ";/?#".AsMemory();
-        private static readonly ReadOnlyMemory<char> DotTerminators = "./?#".AsMemory();
-        private static readonly ReadOnlyMemory<char> AllOtherTerminators = "/?&".AsMemory();
-
-        private readonly ReadOnlyMemory<char>[] parameterNames;
-        private readonly char prefix;
-        private readonly ReadOnlyMemory<char> terminators;
-
-        public ExpressionSequence(string[] parameterNames, char prefix)
-        {
-            this.parameterNames = parameterNames.Select(s => s.AsMemory()).ToArray();
-            this.prefix = prefix;
-            this.terminators = GetTerminators(prefix);
-
-            static ReadOnlyMemory<char> GetTerminators(char prefix)
-            {
-                return prefix switch
-                {
-                    '#' => FragmentTerminators,
-                    '/' => SlashTerminators,
-                    '?' or '&' => QueryTerminators,
-                    ';' => SemicolonTerminators,
-                    '.' => DotTerminators,
-                    _ => AllOtherTerminators,
-                };
-            }
-        }
-
-        private enum State
-        {
-            LookingForPrefix,
-            LookingForParams,
-        }
-
-        /// <inheritdoc/>
-        public bool Consume<TState>(ReadOnlySpan<char> segment, out int charsConsumed, ParameterCallback<TState>? parameterCallback, ref Consumer tail, ref TState callbackState)
-        {
-            charsConsumed = 0;
-            int parameterIndex = 0;
-            ReadOnlySpan<char> terminatorsSpan = this.terminators.Span;
-            State state = this.prefix != '\0' ? State.LookingForPrefix : State.LookingForParams;
-            ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex].Span;
-            char currentPrefix = this.prefix;
-            bool foundMatches = false;
-            while (charsConsumed < segment.Length)
-            {
-                switch (state)
-                {
-                    case State.LookingForPrefix:
-                        if (segment[charsConsumed] == currentPrefix)
-                        {
-                            state = State.LookingForParams;
-                            charsConsumed++;
-
-                            // If we are a fragment parameter, subsequent
-                            // parameters in the sequence use the ','
-                            if (currentPrefix == '#')
-                            {
-                                currentPrefix = ',';
-                            }
-                        }
-                        else
-                        {
-                            // If we found any matches, then that's good, and
-                            // we return our chars consumed.
-                            //
-                            // On the other hand, if we found no matches before we reached the
-                            // end of our search, we say we didn't consume any characters,
-                            // but we still matched successfully, because these matches were all optional.
-                            if (!foundMatches)
-                            {
-                                charsConsumed = 0;
-                            }
-
-                            return true;
-                        }
-
-                        break;
-
-                    case State.LookingForParams:
-                        // We found the prefix, so we need to find the next block until the terminator.
-                        int segmentStart = charsConsumed;
-                        int segmentEnd = segmentStart;
-
-                        // Now we are looking ahead to the next terminator, or the end of the segment
-                        while (segmentEnd < segment.Length)
-                        {
-                            if (terminatorsSpan.Contains(segment.Slice(segmentEnd, 1), StringComparison.Ordinal))
-                            {
-                                // Break out of the while because we've found the end.
-                                break;
-                            }
-
-                            segmentEnd++;
-                        }
-
-                        // Tell the world about this parameter (note that the span for the value could be empty).
-                        parameterCallback?.Invoke(false, currentParameterName, segment[segmentStart..segmentEnd], ref callbackState);
-                        charsConsumed = segmentEnd;
-                        foundMatches = true;
-
-                        // Start looking for the next parameter.
-                        parameterIndex++;
-
-                        // We've moved past the last parameter we're looking for.
-                        if (parameterIndex >= this.parameterNames.Length)
-                        {
-                            // We found at least this match!
-                            return true;
-                        }
-
-                        // If we match the tail (the remaining segments in the match) we don't want to consume the next one.
-                        if (tail.MatchesAsTail(segment[charsConsumed..], out int tailConsumed, ref callbackState) && (tailConsumed + charsConsumed == segment.Length))
-                        {
-                            // The tail matches the rest of the segment, so we will ignore our next parameter.
-                            return true;
-                        }
-
-                        // Otherwise, start looking for the next parameter
-                        currentParameterName = this.parameterNames[parameterIndex].Span;
-
-                        state = this.prefix != '\0' ? State.LookingForPrefix : State.LookingForParams;
-                        break;
-                }
-            }
-
-            return true;
-        }
-    }
-
-    /// <summary>
-    /// Represents a query expression sequence in a URI template.
-    /// </summary>
-    private sealed class QueryExpressionSequence : IUriTemplatePatternElement
-    {
-        private readonly ReadOnlyMemory<char>[] parameterNames;
-        private readonly char prefix;
-
-        public QueryExpressionSequence(string[] parameterNames, char prefix)
-        {
-            this.parameterNames = parameterNames.Select(s => s.AsMemory()).ToArray();
-            this.prefix = prefix;
-        }
-
-        private enum State
-        {
-            LookingForPrefix,
-            LookingForParams,
-        }
-
-        /// <inheritdoc/>
-        public bool Consume<TState>(ReadOnlySpan<char> segment, out int charsConsumed, ParameterCallback<TState>? parameterCallback, ref Consumer tail, ref TState callbackState)
-        {
-            charsConsumed = 0;
-            int parameterIndex = 0;
-            State state = State.LookingForPrefix;
-            ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex].Span;
-            char currentPrefix = this.prefix;
-            bool foundMatches = false;
-            while (charsConsumed < segment.Length)
-            {
-                switch (state)
-                {
-                    case State.LookingForPrefix:
-                        if (segment[charsConsumed] == currentPrefix)
-                        {
-                            state = State.LookingForParams;
-                            charsConsumed++;
-
-                            // If we are a query parameter, subsequent
-                            // parameters in the sequence use the '&'
-                            if (currentPrefix == '?')
-                            {
-                                currentPrefix = '&';
-                            }
-                        }
-                        else
-                        {
-                            // If we found any matches, then that's good, and
-                            // we return our chars consumed.
-                            //
-                            // On the other hand, if we found no matches before we reached the
-                            // end of our search, we say we didn't consume any characters,
-                            // but we still matched successfully, because these matches were all optional.
-                            if (!foundMatches)
-                            {
-                                charsConsumed = 0;
-                            }
-
-                            return true;
-                        }
-
-                        break;
-
-                    case State.LookingForParams:
-                        // Now check the rest of the characters
-                        if (!segment[charsConsumed..].StartsWith(currentParameterName))
-                        {
-                            parameterIndex++;
-
-                            // We've moved past the last parameter we're looking for.
-                            if (parameterIndex >= this.parameterNames.Length)
-                            {
-                                // If we found any matches, then that's good, and
-                                // we return our chars consumed.
-                                //
-                                // On the other hand, if we found no matches before we reached the
-                                // end of our search, we say we didn't consume any characters,
-                                // but we still matched successfully, because these matches were all optional.
-                                if (!foundMatches)
-                                {
-                                    charsConsumed = 0;
-                                }
-                                else
-                                {
-                                    // Back up so that we *didn't* consume the prefix character
-                                    // as this must be associated with the next segment
-                                    charsConsumed--;
-                                }
-
-                                return true;
-                            }
-
-                            // Go round again, but try the next parameter name.
-                            currentParameterName = this.parameterNames[parameterIndex].Span;
-                        }
-                        else
-                        {
-                            // We found our name, so let's see if the next character is '='
-                            if (segment[charsConsumed + currentParameterName.Length] != '=')
-                            {
-                                // If the next character wasn't '=' we don't match this segment at all
-                                // so something has definitely gone awry! One possible case, for example, is that the
-                                // current segment is a parameter that has a longer name, prefixed with our parameter name
-                                // e.g. we are a value represented by '&foo=3' and it is '&fooBar=4'
-                                parameterIndex++;
-
-                                // We've moved past the last parameter we're looking for.
-                                if (parameterIndex >= this.parameterNames.Length)
-                                {
-                                    // If we found any matches, then that's good, and
-                                    // we return our chars consumed.
-                                    //
-                                    // On the other hand, if we found no matches before we reached the
-                                    // end of our search, we say we didn't consume any characters,
-                                    // but we still matched successfully, because these matches were all optional.
-                                    if (!foundMatches)
-                                    {
-                                        charsConsumed = 0;
-                                    }
-                                    else
-                                    {
-                                        // Back up so that we *didn't* consume the prefix character
-                                        // as this must be associated with the next segment
-                                        charsConsumed--;
-                                    }
-
-                                    return true;
-                                }
-
-                                currentParameterName = this.parameterNames[parameterIndex].Span;
-                            }
-                            else
-                            {
-                                // The next character was '=' so now let's pick out the value
-                                int segmentStart = charsConsumed + currentParameterName.Length + 1;
-                                int segmentEnd = segmentStart;
-
-                                // So we did match the parameter and reach '=' now we are looking ahead to the next terminator, or the end of the segment
-                                while (segmentEnd < segment.Length)
-                                {
-                                    char terminator = segment[segmentEnd];
-                                    if (terminator == '/' || terminator == '?' || terminator == '&')
-                                    {
-                                        // Break out because we've found the end.
-                                        break;
-                                    }
-
-                                    segmentEnd++;
-                                }
-
-                                // Tell the world about this parameter (note that the span for the value could be empty).
-                                parameterCallback?.Invoke(false, currentParameterName, segment[segmentStart..segmentEnd], ref callbackState);
-                                charsConsumed = segmentEnd;
-                                foundMatches = true;
-
-                                // Start looking for the next parameter.
-                                parameterIndex++;
-
-                                // We've moved past the last parameter we're looking for.
-                                if (parameterIndex >= this.parameterNames.Length)
-                                {
-                                    // We found at least this match!
-                                    return true;
-                                }
-
-                                // Otherwise, start looking for the next parameter
-                                currentParameterName = this.parameterNames[parameterIndex].Span;
-
-                                state = State.LookingForPrefix;
-                            }
-                        }
-
-                        break;
-                }
-            }
-
-            return true;
-        }
-    }
-#endif
 }

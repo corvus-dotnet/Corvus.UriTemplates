@@ -26,14 +26,7 @@ namespace UriTemplateTests
 
             if (table.TryMatch(url, out TemplateMatchResult<string> match))
             {
-                try
-                {
-                    Assert.Equal(key, match.Result);
-                }
-                finally
-                {
-                    match.Dispose();
-                }
+                Assert.Equal(key, match.Result);
             }
         }
 
@@ -56,14 +49,7 @@ namespace UriTemplateTests
 
             if (table.TryMatch(url, out TemplateMatchResult<string> match))
             {
-                try
-                {
-                    Assert.Equal(key, match.Result);
-                }
-                finally
-                {
-                    match.Dispose();
-                }
+                Assert.Equal(key, match.Result);
             }
         }
 
@@ -88,14 +74,7 @@ InlineData("/foo", "fooxy"),
 
             if (table.TryMatch(url, out TemplateMatchResult<string> match))
             {
-                try
-                {
-                    Assert.Equal(key, match.Result);
-                }
-                finally
-                {
-                    match.Dispose();
-                }
+                Assert.Equal(key, match.Result);
             }
         }
 
@@ -113,14 +92,7 @@ InlineData("/foo", "fooxy"),
 
             if (table.TryMatch("/foo?x=a,b,c,d", out TemplateMatchResult<string> match))
             {
-                try
-                {
-                    Assert.Equal("fooxy2", match.Result);
-                }
-                finally
-                {
-                    match.Dispose();
-                }
+                Assert.Equal("fooxy2", match.Result);
             }
         }
     }

@@ -16,11 +16,7 @@ public static class TemplateParameterProvider
 {
     private const string UriReservedSymbols = ":/?#[]@!$&'()*+,;=";
     private const string UriUnreservedSymbols = "-._~";
-#if NET8_0_OR_GREATER
     private static readonly SearchValues<char> PossibleHexChars = SearchValues.Create("0123456789AaBbCcDdEeF");
-#else
-    private static readonly ReadOnlyMemory<char> PossibleHexChars = "0123456789AaBbCcDdEeF".AsMemory();
-#endif
 #pragma warning disable SA1010 // Opening square brackets should be spaced correctly - Analysers need to catch up with the new syntax.
     private static readonly char[] HexDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
 #pragma warning restore SA1010 // Opening square brackets should be spaced correctly
@@ -85,12 +81,6 @@ public static class TemplateParameterProvider
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsHex(char v)
     {
-#if NET8_0_OR_GREATER
         return PossibleHexChars.Contains(v);
-#else
-        Span<char> vSpan = stackalloc char[1];
-        vSpan[0] = v;
-        return PossibleHexChars.Span.Contains(vSpan, StringComparison.Ordinal);
-#endif
     }
 }

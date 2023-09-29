@@ -12,9 +12,9 @@ namespace Corvus.UriTemplates;
 /// <typeparam name="TMatch">The type of the value to be matched.</typeparam>
 public sealed class UriTemplateTable<TMatch>
 {
-    private readonly ImmutableArray<ParserAndMatch> entries;
+    private readonly ParserAndMatch[] entries;
 
-    private UriTemplateTable(ImmutableArray<ParserAndMatch> entries)
+    private UriTemplateTable(ParserAndMatch[] entries)
     {
         this.entries = entries;
     }
@@ -32,7 +32,7 @@ public sealed class UriTemplateTable<TMatch>
     /// <returns><see langword="true"/> if the URI matched a value in the table.</returns>
     /// <remarks>
     /// <para>
-    /// This will find the first match in the table. To find all matches, use <see cref="TryMatchAll(ReadOnlySpan{char}, int, Span{TemplateMatchResult{TMatch}})"/>.
+    /// This will find the first match in the table.
     /// </para>
     /// <para>
     /// While the <paramref name="match"/> result is <see cref="IDisposable"/> you need only dispose it if the method returned <see langword="true"/>.
@@ -54,7 +54,7 @@ public sealed class UriTemplateTable<TMatch>
     /// <returns><see langword="true"/> if the URI matched a value in the table.</returns>
     /// <remarks>
     /// <para>
-    /// This will find the first match in the table. To find all matches, use <see cref="TryMatchAll(ReadOnlySpan{char}, int, Span{TemplateMatchResult{TMatch}})"/>.
+    /// This will find the first match in the table.
     /// </para>
     /// <para>
     /// While the <paramref name="match"/> result is <see cref="IDisposable"/> you need only dispose it if the method returned <see langword="true"/>.
@@ -63,57 +63,19 @@ public sealed class UriTemplateTable<TMatch>
     /// </remarks>
     public bool TryMatch(ReadOnlySpan<char> uri, int initialParameterCount, out TemplateMatchResult<TMatch> match)
     {
-        var cache = ParameterCache.Rent(initialParameterCount);
-
-        foreach (ParserAndMatch entry in this.entries)
+        for (int i = 0; i < this.entries.Length; ++i)
         {
-            if (cache.TryMatch(entry.Parser, uri))
+            ref ParserAndMatch entry = ref this.entries[i];
+            if (entry.Parser.IsMatch(uri))
             {
-                match = new(entry.Match, cache);
+                match = new(entry.Match, entry.Parser);
                 return true;
             }
-
-            // Reset the cache for the next time around.
-            cache.Reset();
         }
 
         // No result, so return the cache.
-        cache.Return();
         match = default;
         return false;
-    }
-
-    /// <summary>
-    /// Try to match the uri against the URIs in the table, providing all matches.
-    /// </summary>
-    /// <param name="uri">The URI to match.</param>
-    /// <param name="initialParameterCount">The initial parameter count for the match.
-    /// Ensure that this is greater than or equal to the maximum expected number of parameters to avoid re-allocation overheads.</param>
-    /// <param name="matches">A span filled with the number of matches found.</param>
-    /// <returns>The number of matches found.</returns>
-    public int TryMatchAll(ReadOnlySpan<char> uri, int initialParameterCount, Span<TemplateMatchResult<TMatch>> matches)
-    {
-        int written = 0;
-        var cache = ParameterCache.Rent(initialParameterCount);
-
-        foreach (ParserAndMatch entry in this.entries)
-        {
-            if (cache.TryMatch(entry.Parser, uri))
-            {
-                matches[written++] = new(entry.Match, cache);
-                cache = ParameterCache.Rent(initialParameterCount);
-            }
-            else
-            {
-                // Reset the cache for the next time around.
-                cache.Reset();
-            }
-        }
-
-        // We will always need to return the "last cache rented" at the end - either it was a newly created
-        // one after we found one on the last run round.
-        cache.Return();
-        return written;
     }
 
     /// <summary>
@@ -128,14 +90,14 @@ public sealed class UriTemplateTable<TMatch>
     /// </summary>
     public class Builder
     {
-        private readonly ImmutableArray<ParserAndMatch>.Builder builder;
+        private readonly List<ParserAndMatch> builder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Builder"/> struct.
         /// </summary>
         internal Builder()
         {
-            this.builder = ImmutableArray.CreateBuilder<ParserAndMatch>();
+            this.builder = new List<ParserAndMatch>();
         }
 
         /// <summary>
@@ -148,7 +110,7 @@ public sealed class UriTemplateTable<TMatch>
         /// </remarks>
         internal Builder(int initialCapacity)
         {
-            this.builder = ImmutableArray.CreateBuilder<ParserAndMatch>(initialCapacity);
+            this.builder = new List<ParserAndMatch>(initialCapacity);
         }
 
         /// <summary>
@@ -192,7 +154,7 @@ public sealed class UriTemplateTable<TMatch>
         /// <returns>The resulting table.</returns>
         public UriTemplateTable<TMatch> ToTable()
         {
-            return new(this.builder.ToImmutable());
+            return new([.. this.builder]);
         }
     }
 }

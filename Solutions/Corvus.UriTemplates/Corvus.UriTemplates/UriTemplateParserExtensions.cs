@@ -24,7 +24,7 @@ public static class UriTemplateParserExtensions
     /// <typeparam name="TState">The type of the state for the callback.</typeparam>
     /// <param name="parser">The parser to use.</param>
     /// <param name="uri">The uri to parse.</param>
-    /// <param name="callback">The callback to recieve the enumerated parameters.</param>
+    /// <param name="callback">The callback to receive the enumerated parameters.</param>
     /// <param name="state">The state for the callback.</param>
     /// <param name="initialCapacity">The initial cache size, which should be greater than or equal to the expected number of parameters.
     /// It also provides the increment for the cache size should it be exceeded.</param>

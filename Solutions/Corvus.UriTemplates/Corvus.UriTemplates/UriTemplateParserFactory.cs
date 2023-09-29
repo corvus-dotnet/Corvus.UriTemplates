@@ -51,7 +51,9 @@ public static class UriTemplateParserFactory
     /// </remarks>
     public static IUriTemplateParser CreateParser(ReadOnlySpan<char> uriTemplate)
     {
-        return new UriParser(CreateParserElements(uriTemplate));
+        return new UriParser(
+            CreateParserElements(uriTemplate),
+            new Regex(UriTemplateRegexBuilder.CreateMatchingRegex(uriTemplate), RegexOptions.Compiled, TimeSpan.FromSeconds(3)));
     }
 
     /// <summary>
@@ -65,7 +67,9 @@ public static class UriTemplateParserFactory
     /// </remarks>
     public static IUriTemplateParser CreateParser(string uriTemplate)
     {
-        return new UriParser(CreateParserElements(uriTemplate.AsSpan()));
+        return new UriParser(
+            CreateParserElements(uriTemplate.AsSpan()),
+            new Regex(UriTemplateRegexBuilder.CreateMatchingRegex(uriTemplate), RegexOptions.Compiled, TimeSpan.FromSeconds(3)));
     }
 
     private static IUriTemplatePatternElement[] CreateParserElements(ReadOnlySpan<char> uriTemplate)
@@ -233,22 +237,18 @@ public static class UriTemplateParserFactory
     private sealed class UriParser : IUriTemplateParser
     {
         private readonly IUriTemplatePatternElement[] elements;
+        private readonly Regex regex;
 
-        public UriParser(in IUriTemplatePatternElement[] elements)
+        public UriParser(in IUriTemplatePatternElement[] elements, Regex regex)
         {
             this.elements = elements;
+            this.regex = regex;
         }
 
         /// <inheritdoc/>
         public bool IsMatch(in ReadOnlySpan<char> uri)
         {
-            Consumer sequence = new(this.elements.AsSpan());
-            int state = 0;
-            bool result = sequence.Consume(uri, out int charsConsumed, null, ref state);
-
-            // We have successfully parsed the uri if all of our elements successfully consumed
-            // the contents they were expecting, and we have no characters left over.
-            return result && charsConsumed == uri.Length;
+            return this.regex.IsMatch(uri);
         }
 
         /// <inheritdoc/>

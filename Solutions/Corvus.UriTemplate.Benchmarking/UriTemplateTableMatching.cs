@@ -34,7 +34,7 @@ public class UriTemplateTableMatching
         this.tavisTemplateTable.Add("root", new Tavis.UriTemplates.UriTemplate("/"));
         builder.Add("/", "root");
 
-        for (int i = 0; i < 10_000; ++i)
+        for (int i = 0; i < 1_000; ++i)
         {
             string guid = Guid.NewGuid().ToString();
             string uri1 = $"/{guid}/{{bar}}";
@@ -87,7 +87,18 @@ public class UriTemplateTableMatching
     public bool MatchTavis()
     {
         Tavis.UriTemplates.TemplateMatch? result = this.tavisTemplateTable!.Match(TavisUri);
-        return result?.Key is not null;
+        if (result?.Parameters is IDictionary<string, object> parameters)
+        {
+            int count = 0;
+            foreach (KeyValuePair<string, object> param in parameters)
+            {
+                count++;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -100,7 +111,18 @@ public class UriTemplateTableMatching
     public bool MatchCorvusTavis()
     {
         TavisApi.TemplateMatch? result = this.corvusTavisTemplateTable!.Match(TavisUri);
-        return result?.Key is not null;
+        if (result?.Parameters is IDictionary<string, object> parameters)
+        {
+            int count = 0;
+            foreach (KeyValuePair<string, object> param in parameters)
+            {
+                count++;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>

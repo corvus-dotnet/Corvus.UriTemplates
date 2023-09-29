@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Corvus.UriTemplate.Benchmarking\Corvus.UriTemplate.Benchmarking.csproj" />
     <ProjectReference Include="..\Corvus.UriTemplates.Resolvers.DictionaryOfObject\Corvus.UriTemplates.Resolvers.DictionaryOfObject.csproj" />
     <ProjectReference Include="..\Corvus.UriTemplates.Resolvers.Json\Corvus.UriTemplates.Resolvers.Json.csproj" />
     <ProjectReference Include="..\Corvus.UriTemplates\Corvus.UriTemplates.csproj" />

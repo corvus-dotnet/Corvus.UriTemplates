@@ -169,7 +169,7 @@ internal struct ParameterCache
     /// <param name="name">The name of the parameter.</param>
     /// <param name="value">The value of the parameter.</param>
     /// <param name="state">The parameter cache.</param>
-    /// <remarks>Pass this to <see cref="IUriTemplateParser.ParseUri{TState}(ReadOnlySpan{char}, ParameterCallback{TState}, ref TState)"/>, as the callback.</remarks>
+    /// <remarks>Pass this to <see cref="IUriTemplateParser.ParseUri{TState}(in ReadOnlySpan{char}, ParameterCallback{TState}, ref TState)"/>, as the callback.</remarks>
     private static void HandleParameters(bool reset, ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref ParameterCache state)
     {
         if (!reset)

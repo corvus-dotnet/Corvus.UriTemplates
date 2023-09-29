@@ -24,7 +24,7 @@ public interface IUriTemplateParser
     /// </summary>
     /// <param name="uri">The URI to match.</param>
     /// <returns><see langword="true"/> if the template is a match for the URI.</returns>
-    public bool IsMatch(ReadOnlySpan<char> uri);
+    public bool IsMatch(in ReadOnlySpan<char> uri);
 
     /// <summary>
     /// Parses the given URI, calling your parameter callback for each named parameter discovered.
@@ -44,5 +44,5 @@ public interface IUriTemplateParser
     /// those parameters are invalid, and should be disregarded.
     /// </para>
     /// </remarks>
-    bool ParseUri<TState>(ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state);
+    bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state);
 }

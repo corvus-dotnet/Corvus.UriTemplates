@@ -34,7 +34,7 @@ public class UriTemplateTableMatching
         this.tavisTemplateTable.Add("root", new Tavis.UriTemplates.UriTemplate("/"));
         builder.Add("/", "root");
 
-        for (int i = 0; i < 10_000; ++i)
+        for (int i = 0; i < 300; ++i)
         {
             string guid = Guid.NewGuid().ToString();
             string uri1 = $"/{guid}/{{bar}}";

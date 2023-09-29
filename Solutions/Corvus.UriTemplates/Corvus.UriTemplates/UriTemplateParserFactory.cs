@@ -439,12 +439,12 @@ public static class UriTemplateParserFactory
     private sealed class QueryExpressionSequence : IUriTemplatePatternElement
     {
         private static readonly SearchValues<char> Terminators = SearchValues.Create("/?&");
-        private readonly ReadOnlyMemory<char>[] parameterNames;
+        private readonly string[] parameterNames;
         private readonly char prefix;
 
         public QueryExpressionSequence(string[] parameterNames, char prefix)
         {
-            this.parameterNames = parameterNames.Select(s => s.AsMemory()).ToArray();
+            this.parameterNames = parameterNames;
             this.prefix = prefix;
         }
 
@@ -460,7 +460,7 @@ public static class UriTemplateParserFactory
             charsConsumed = 0;
             int parameterIndex = 0;
             State state = State.LookingForPrefix;
-            ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex].Span;
+            ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex];
             char currentPrefix = this.prefix;
             bool foundMatches = false;
             while (charsConsumed < segment.Length)
@@ -528,7 +528,7 @@ public static class UriTemplateParserFactory
                             }
 
                             // Go round again, but try the next parameter name.
-                            currentParameterName = this.parameterNames[parameterIndex].Span;
+                            currentParameterName = this.parameterNames[parameterIndex];
                         }
                         else
                         {
@@ -564,7 +564,7 @@ public static class UriTemplateParserFactory
                                     return true;
                                 }
 
-                                currentParameterName = this.parameterNames[parameterIndex].Span;
+                                currentParameterName = this.parameterNames[parameterIndex];
                             }
                             else
                             {
@@ -600,7 +600,7 @@ public static class UriTemplateParserFactory
                                 }
 
                                 // Otherwise, start looking for the next parameter
-                                currentParameterName = this.parameterNames[parameterIndex].Span;
+                                currentParameterName = this.parameterNames[parameterIndex];
 
                                 state = State.LookingForPrefix;
                             }

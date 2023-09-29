@@ -11,7 +11,7 @@ using Perfolizer.Mathematics.OutlierDetection;
 
 BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).RunAll(
         ManualConfig.Create(DefaultConfig.Instance)
-        .AddJob(Job.Dry
+        .AddJob(Job.Default
             .WithRuntime(CoreRuntime.Core80)
             .WithOutlierMode(OutlierMode.RemoveAll)
             .WithStrategy(RunStrategy.Throughput)));

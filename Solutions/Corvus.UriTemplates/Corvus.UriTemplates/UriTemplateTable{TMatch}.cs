@@ -3,11 +3,12 @@
 // </copyright>
 
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Corvus.UriTemplates;
 
 /// <summary>
-/// Parses a URI against a table of URI templates.
+/// Matches a URI against a table of URI templates and returns a result value.
 /// </summary>
 /// <typeparam name="TMatch">The type of the value to be matched.</typeparam>
 public sealed class UriTemplateTable<TMatch>
@@ -41,7 +42,7 @@ public sealed class UriTemplateTable<TMatch>
     /// It is, however, safe to dispose in either case.
     /// </para>
     /// </remarks>
-    public bool TryMatch(ReadOnlySpan<char> uri, out TemplateMatchResult<TMatch> match)
+    public bool TryMatch(ReadOnlySpan<char> uri, [MaybeNullWhen(false)] out TemplateMatchResult<TMatch> match)
     {
         for (int i = 0; i < this.parsers.Length; ++i)
         {
@@ -53,7 +54,6 @@ public sealed class UriTemplateTable<TMatch>
             }
         }
 
-        // No result, so return the cache.
         match = default;
         return false;
     }

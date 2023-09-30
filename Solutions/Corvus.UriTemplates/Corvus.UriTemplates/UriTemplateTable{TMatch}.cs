@@ -43,28 +43,6 @@ public sealed class UriTemplateTable<TMatch>
     /// </remarks>
     public bool TryMatch(ReadOnlySpan<char> uri, out TemplateMatchResult<TMatch> match)
     {
-        return this.TryMatch(uri, 10, out match);
-    }
-
-    /// <summary>
-    /// Try to match the uri against the URI templates in the table.
-    /// </summary>
-    /// <param name="uri">The URI to match.</param>
-    /// <param name="initialParameterCount">The initial parameter count for the match.
-    /// Ensure that this is greater than or equal to the maximum expected number of parameters to avoid re-allocation overheads.</param>
-    /// <param name="match">The matched result.</param>
-    /// <returns><see langword="true"/> if the URI matched a value in the table.</returns>
-    /// <remarks>
-    /// <para>
-    /// This will find the first match in the table.
-    /// </para>
-    /// <para>
-    /// While the <paramref name="match"/> result is <see cref="IDisposable"/> you need only dispose it if the method returned <see langword="true"/>.
-    /// It is, however, safe to dispose in either case.
-    /// </para>
-    /// </remarks>
-    public bool TryMatch(ReadOnlySpan<char> uri, int initialParameterCount, out TemplateMatchResult<TMatch> match)
-    {
         for (int i = 0; i < this.parsers.Length; ++i)
         {
             IUriTemplateParser parser = this.parsers[i];

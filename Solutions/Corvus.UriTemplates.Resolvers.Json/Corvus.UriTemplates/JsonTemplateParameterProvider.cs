@@ -23,7 +23,7 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
     /// <returns>
     ///     <see cref="VariableProcessingState.Success"/> if the variable was successfully processed,
     ///     <see cref="VariableProcessingState.NotProcessed"/> if the parameter was not present, or
-    ///     <see cref="VariableProcessingState.Failure"/> if the parmeter could not be processed because it was incompatible with the variable specification in the template.</returns>
+    ///     <see cref="VariableProcessingState.Failure"/> if the parameter could not be processed because it was incompatible with the variable specification in the template.</returns>
     public VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in JsonElement parameters, IBufferWriter<char> output)
     {
         if (!parameters.TryGetProperty(variableSpecification.VarName, out JsonElement value)
@@ -166,7 +166,7 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
                 isFirst = false;
             }
 
-            value.TryGetName(WriteEncodedPropertyName, new WriteEncodedPropertyNameState(output, op.AllowReserved), out bool decoded);
+            TemplateParameterProvider.Encode(output, value.Name, op.AllowReserved);
 
             if (explode)
             {
@@ -179,20 +179,6 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
 
             AppendValue(output, value.Value, 0, op.AllowReserved);
         }
-    }
-
-    /// <summary>
-    /// Encoded and write the property name to the output.
-    /// </summary>
-    /// <param name="name">The name to write.</param>
-    /// <param name="state">The state for the writer.</param>
-    /// <param name="result">Whether the value was written successfully.</param>
-    /// <returns><see langword="true"/> if the value was written successfully.</returns>
-    private static bool WriteEncodedPropertyName(ReadOnlySpan<char> name, in WriteEncodedPropertyNameState state, out bool result)
-    {
-        TemplateParameterProvider.Encode(state.Output, name, state.AllowReserved);
-        result = true;
-        return true;
     }
 
     /// <summary>

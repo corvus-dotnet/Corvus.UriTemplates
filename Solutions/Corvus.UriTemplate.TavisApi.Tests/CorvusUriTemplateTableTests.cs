@@ -12,7 +12,7 @@ namespace UriTemplateTests
         InlineData("/baz/kit", "kit"),
         InlineData("/baz/fod", "baz"),
         InlineData("/baz/fod/blob", "blob"),
-        InlineData("/glah/flid/blob", "goo")]
+        InlineData("/glah/flip/blob", "goo")]
         public void FindPathTemplates(string url, string key)
         {
             var builder = UriTemplateTable.CreateBuilder<string>();  // Shorter paths and literal path segments should be added to the table first.

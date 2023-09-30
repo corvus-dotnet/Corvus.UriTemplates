@@ -17,11 +17,11 @@ namespace UriTemplateTests
         InlineData("/baz/fod", "PUT", "baz_put"),
         InlineData("/baz/fod/blob", "GET", "blob_get"),
         InlineData("/baz/fod/blob", "PUT", "blob_put"),
-        InlineData("/glah/flid/blob", "GET", "goo_get"),
-        InlineData("/glah/flid/blob", "PUT", "goo_put")]
+        InlineData("/glah/flip/blob", "GET", "goo_get"),
+        InlineData("/glah/flip/blob", "PUT", "goo_put")]
         public void FindPathTemplates(string url, string verb, string key)
         {
-            var builder = UriTemplateAndVerbTable.CreateBuilder<string>();  // Shorter paths and literal path segments should be added to the table first.
+            var builder = UriTemplateAndVerbTable.CreateBuilder<string>();
             builder.Add("/", "GET", "root_get");
             builder.Add("/", "PUT", "root_put");
             builder.Add("/foo/{bar}", "GET", "foo_get");

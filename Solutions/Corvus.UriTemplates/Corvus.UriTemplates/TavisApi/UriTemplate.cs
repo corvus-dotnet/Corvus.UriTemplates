@@ -6,6 +6,7 @@
 // </licensing>
 
 using System.Data.Common;
+using System.Runtime.CompilerServices;
 
 namespace Corvus.UriTemplates.TavisApi;
 
@@ -220,14 +221,62 @@ public class UriTemplate
             default:
                 throw new ArgumentOutOfRangeException(nameof(order), order, null);
         }
+    }
 
-        static void MatchParameterNames(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref (HashSet<string> ParameterNames, IDictionary<string, object> PathParameters) state)
+    /// <summary>
+    /// Matches the given URI against the template.
+    /// </summary>
+    /// <param name="uri">The URI to match.</param>
+    /// <param name="order">Whether query string ordering is strict.</param>
+    /// <returns><see langword="true"/> if the uri matches the template.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The parameter order was not understood.</exception>
+    internal bool IsMatch(Uri uri, QueryStringParameterOrder order = QueryStringParameterOrder.Strict)
+    {
+        switch (order)
         {
-            string name1 = name.ToString();
-            if (state.ParameterNames.Contains(name1))
-            {
-                state.PathParameters.Add(name1, value.ToString());
-            }
+            case QueryStringParameterOrder.Strict:
+                {
+                    IUriTemplateParser? parser = this.parser;
+
+                    if (parser == null)
+                    {
+                        parser = UriTemplateParserFactory.CreateParser(this.template);
+                        lock (this.lockObject)
+                        {
+                            this.parser = parser;
+                        }
+                    }
+
+                    if (parser.IsMatch(uri.OriginalString.AsSpan()))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+            case QueryStringParameterOrder.Any:
+                {
+                    if (!uri.IsAbsoluteUri)
+                    {
+                        uri = new Uri(ComponentBaseUri, uri);
+                    }
+
+                    IDictionary<string, object> pathParameters = new Dictionary<string, object>(this.parameters.Comparer);
+
+                    HashSet<string> parameterNames = this.GetParameterNamesHashSet();
+
+                    (HashSet<string> ParameterNames, IDictionary<string, object> PathParameters) parameterState = (parameterNames, pathParameters);
+
+                    uri.GetQueryStringParameters(MatchParameterNames, ref parameterState);
+
+                    return pathParameters.Count != 0;
+                }
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(order), order, null);
         }
     }
 
@@ -245,6 +294,15 @@ public class UriTemplate
         static void AccumulateParameterNames(ReadOnlySpan<char> name, ref HashSet<string> state)
         {
             state.Add(name.ToString());
+        }
+    }
+
+    private static void MatchParameterNames(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref (HashSet<string> ParameterNames, IDictionary<string, object> PathParameters) state)
+    {
+        string name1 = name.ToString();
+        if (state.ParameterNames.Contains(name1))
+        {
+            state.PathParameters.Add(name1, value.ToString());
         }
     }
 }

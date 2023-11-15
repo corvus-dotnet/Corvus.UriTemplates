@@ -36,6 +36,21 @@ public static class UriTemplateRegexBuilder
     /// the results in some way. Ideally, this can be done at code generation/compile time
     /// for URI templates that can be discovered at the time (e.g. when processing OpenAPI documents.)
     /// </remarks>
+    public static string CreateMatchingRegex(ReadOnlySpan<char> uriTemplate)
+    {
+        return CreateMatchingRegex(uriTemplate.ToString());
+    }
+
+    /// <summary>
+    /// Creates a regular expression matching the given URI template.
+    /// </summary>
+    /// <param name="uriTemplate">The uri template.</param>
+    /// <returns>The regular expression string matching the URI template.</returns>
+    /// <remarks>
+    /// As this is an allocation-heavy operation, you should ensure that you cache
+    /// the results in some way. Ideally, this can be done at code generation/compile time
+    /// for URI templates that can be discovered at the time (e.g. when processing OpenAPI documents.)
+    /// </remarks>
     public static string CreateMatchingRegex(string uriTemplate)
     {
         string template = TemplateConversion.Replace(uriTemplate, @"$+\?");

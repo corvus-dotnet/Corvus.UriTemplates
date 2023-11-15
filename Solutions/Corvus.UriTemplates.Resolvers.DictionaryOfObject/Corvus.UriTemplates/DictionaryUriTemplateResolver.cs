@@ -14,9 +14,7 @@ namespace Corvus.UriTemplates;
 public static class DictionaryUriTemplateResolver
 {
     private static readonly Dictionary<string, object?> EmptyDictionary = new();
-#if NET6_0
     private static readonly DictionaryTemplateParameterProvider ParameterProvider = new();
-#endif
 
     /// <summary>
     /// Resolve the template into an output result.
@@ -32,11 +30,7 @@ public static class DictionaryUriTemplateResolver
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryResolveResult<TState>(ReadOnlySpan<char> template, bool resolvePartially, in IDictionary<string, object?> parameters, ParameterNameCallback<TState> parameterNameCallback, ResolvedUriTemplateCallback<TState> callback, ref TState state)
     {
-#if NET6_0
         return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(ParameterProvider, template, resolvePartially, parameters, callback, parameterNameCallback, ref state);
-#else
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(template, resolvePartially, parameters, callback, parameterNameCallback, ref state);
-#endif
     }
 
     /// <summary>
@@ -52,11 +46,7 @@ public static class DictionaryUriTemplateResolver
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryResolveResult<TState>(ReadOnlySpan<char> template, bool resolvePartially, in IDictionary<string, object?> parameters, ResolvedUriTemplateCallback<TState> callback, ref TState state)
     {
-#if NET6_0
         return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(ParameterProvider, template, resolvePartially, parameters, callback, null, ref state);
-#else
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(template, resolvePartially, parameters, callback, null, ref state);
-#endif
     }
 
     /// <summary>
@@ -71,11 +61,7 @@ public static class DictionaryUriTemplateResolver
     public static bool TryResolveResult(ReadOnlySpan<char> template, IBufferWriter<char> output, bool resolvePartially, in IDictionary<string, object?> parameters)
     {
         object? nullState = default;
-#if NET6_0
         return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(ParameterProvider, template, output, resolvePartially, parameters, null, ref nullState);
-#else
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(template, output, resolvePartially, parameters, null, ref nullState);
-#endif
     }
 
     /// <summary>
@@ -89,11 +75,7 @@ public static class DictionaryUriTemplateResolver
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryGetParameterNames<TState>(ReadOnlySpan<char> template, ParameterNameCallback<TState> callback, ref TState state)
     {
-#if NET6_0
         return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(ParameterProvider, template, true, EmptyDictionary, Nop, callback, ref state);
-#else
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(template, true, EmptyDictionary, Nop, callback, ref state);
-#endif
 
 #pragma warning disable RCS1163 // Unused parameter.
         static void Nop(ReadOnlySpan<char> value, ref TState state)

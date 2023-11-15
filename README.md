@@ -18,18 +18,27 @@ There is a standard benchmark testing basic parameter extraction and resolution 
 As you can see, there is a significant benefit to using the Corvus implementation, even without dropping down the low-level zero allocation API.
 
 ### Apply parameters to a URI template to resolve a URI
-|                Method |     Mean | Error | Ratio |   Gen0 | Allocated | Alloc Ratio |
-|---------------------- |---------:|------:|------:|-------:|----------:|------------:|
-|       ResolveUriTavis | 694.0 ns |    NA |  1.00 | 0.4377 |    1832 B |        1.00 |
-| ResolveUriCorvusTavis | 640.5 ns |    NA |  0.92 | 0.0515 |     216 B |        0.12 |
-|      ResolveUriCorvus | 214.9 ns |    NA |  0.31 |      - |         - |        0.00 |
+| Method                     | Mean     | Error   | StdDev  | Ratio | Gen0   | Allocated | Alloc Ratio |
+|--------------------------- |---------:|--------:|--------:|------:|-------:|----------:|------------:|
+| ResolveUriTavis            | 356.4 ns | 2.59 ns | 2.29 ns |  1.00 | 0.1459 |    1832 B |        1.00 |
+| ResolveUriCorvusTavis      | 308.6 ns | 1.81 ns | 1.51 ns |  0.87 | 0.0172 |     216 B |        0.12 |
+| ResolveUriCorvusJson       | 439.5 ns | 2.75 ns | 2.44 ns |  1.23 | 0.0076 |      96 B |        0.05 |
+| ResolveUriCorvusDictionary | 197.5 ns | 1.48 ns | 1.38 ns |  0.55 | 0.0069 |      88 B |        0.05 |
 
 ### Extract parameters from a URI by using a URI template
-|                       Method |     Mean | Error | Ratio |   Gen0 | Allocated | Alloc Ratio |
-|----------------------------- |---------:|------:|------:|-------:|----------:|------------:|
-|       ExtractParametersTavis | 980.6 ns |    NA |  1.00 | 0.2613 |    1096 B |        1.00 |
-| ExtractParametersCorvusTavis | 495.2 ns |    NA |  0.50 | 0.1450 |     608 B |        0.55 |
-|      ExtractParametersCorvus | 174.6 ns |    NA |  0.18 |      - |         - |        0.00 |
+| Method                                         | Mean      | Error     | StdDev    | Ratio | Gen0   | Allocated | Alloc Ratio |
+|----------------------------------------------- |----------:|----------:|----------:|------:|-------:|----------:|------------:|
+| ExtractParametersTavis                         | 775.49 ns | 15.076 ns | 19.066 ns |  1.00 | 0.0873 |    1096 B |        1.00 |
+| ExtractParametersCorvusTavis                   | 231.16 ns |  4.362 ns |  3.867 ns |  0.30 | 0.0482 |     608 B |        0.55 |
+| ExtractParametersCorvusTavisWithParameterCache | 133.24 ns |  0.322 ns |  0.301 ns |  0.17 |      - |         - |        0.00 |
+| ExtractParametersCorvus                        |  75.53 ns |  0.507 ns |  0.474 ns |  0.10 |      - |         - |        0.00 |
+
+### Match a URI Template Table
+| Method           | Mean     | Error    | StdDev   | Ratio | Gen0   | Allocated | Alloc Ratio |
+|----------------- |---------:|---------:|---------:|------:|-------:|----------:|------------:|
+| MatchTavis       | 48.65 us | 0.671 us | 0.560 us |  1.00 | 5.7983 |   72808 B |       1.000 |
+| MatchCorvusTavis | 27.31 us | 0.255 us | 0.239 us |  0.56 |      - |     376 B |       0.005 |
+| MatchCorvus      | 22.43 us | 0.297 us | 0.263 us |  0.46 |      - |         - |       0.000 |
 
 ## Tavis API
 ### Parameter Extraction

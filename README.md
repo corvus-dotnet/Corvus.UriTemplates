@@ -1,7 +1,7 @@
 # Corvus.UriTemplates
 Low-allocation URI Template parsing and resolution, supporting the [Tavis.UriTemplates](https://github.com/tavis-software/Tavis.UriTemplates) API
 
-This is a netstandard2.1 and net7.0+ implementation of the [URI Template Spec RFC6570](http://tools.ietf.org/html/rfc6570). 
+This is a net8.0+ implementation of the [URI Template Spec RFC6570](http://tools.ietf.org/html/rfc6570). 
 
 The library implements Level 4 compliance and is tested against test cases from [UriTemplate test suite](https://github.com/uri-templates/uritemplate-test).
 

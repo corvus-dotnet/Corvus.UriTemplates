@@ -20,6 +20,13 @@ public delegate void ParameterCallback<TState>(bool reset, ReadOnlySpan<char> na
 public interface IUriTemplateParser
 {
     /// <summary>
+    /// Determines if the UriTemplate matches the given URI.
+    /// </summary>
+    /// <param name="uri">The URI to match.</param>
+    /// <returns><see langword="true"/> if the template is a match for the URI.</returns>
+    public bool IsMatch(in ReadOnlySpan<char> uri);
+
+    /// <summary>
     /// Parses the given URI, calling your parameter callback for each named parameter discovered.
     /// </summary>
     /// <typeparam name="TState">The type of the state to pass.</typeparam>
@@ -37,5 +44,5 @@ public interface IUriTemplateParser
     /// those parameters are invalid, and should be disregarded.
     /// </para>
     /// </remarks>
-    bool ParseUri<TState>(ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state);
+    bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state);
 }

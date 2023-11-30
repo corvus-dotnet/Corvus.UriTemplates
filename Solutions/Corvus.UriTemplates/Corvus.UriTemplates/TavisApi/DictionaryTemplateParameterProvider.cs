@@ -25,11 +25,7 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
     ///     <see cref="VariableProcessingState.Success"/> if the variable was successfully processed,
     ///     <see cref="VariableProcessingState.NotProcessed"/> if the parameter was not present, or
     ///     <see cref="VariableProcessingState.Failure"/> if the parmeter could not be processed because it was incompatible with the variable specification in the template.</returns>
-#if NET6_0
     public VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in IDictionary<string, object?> parameters, IBufferWriter<char> output)
-#else
-    public static VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in IDictionary<string, object?> parameters, IBufferWriter<char> output)
-#endif
     {
         string varName = variableSpecification.VarName.ToString();
         if (!parameters.ContainsKey(varName)

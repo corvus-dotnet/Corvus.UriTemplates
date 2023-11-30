@@ -1,27 +1,13 @@
-﻿using System.Text.Json;
-using Corvus.UriTemplates;
-using Corvus.UriTemplates.TavisApi;
+﻿using Corvus.UriTemplates.Benchmarking;
 
-var template = new UriTemplate("https://example.org/{?foo,bar}", true);
-template.AddParameter("foo", 42);
-Console.WriteLine(template.Resolve());
+UriTemplateTableMatching uriTemplateTableMatching = new();
 
-Tavis.UriTemplates.UriTemplate template2 = new("https://example.org/{?foo,bar}", true);
-template2.SetParameter("foo", 42);
-Console.WriteLine(template2.Resolve());
+await uriTemplateTableMatching.GlobalSetup();
 
-////const string uriTemplate = "http://example.org/location{?value*}";
+await Task.Delay(2000);
 
-////using var jsonValues = JsonDocument.Parse("{\"value\": { \"foo\": \"bar\", \"bar\": 3.4, \"baz\": null }}");
-////Dictionary<string, string> value = new() { { "foo", "bar" }, { "bar", "baz" }, { "baz", "bob" } };
-////Dictionary<string, object?> parameters = new() { { "value", value } };
+uriTemplateTableMatching.MatchCorvus();
 
-////object? nullState = default;
+await Task.Delay(1000);
 
-////JsonUriTemplateResolver.TryResolveResult(uriTemplate.AsSpan(), false, jsonValues.RootElement, HandleResult, ref nullState);
-////DictionaryUriTemplateResolver.TryResolveResult(uriTemplate.AsSpan(), false, parameters, HandleResult, ref nullState);
-
-////static void HandleResult(ReadOnlySpan<char> resolvedTemplate, ref object? state)
-////{
-////    Console.WriteLine(resolvedTemplate.ToString());
-////}
+await uriTemplateTableMatching.GlobalCleanup();

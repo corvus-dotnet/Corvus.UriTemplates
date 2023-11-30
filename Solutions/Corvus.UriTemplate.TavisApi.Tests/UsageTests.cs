@@ -38,7 +38,7 @@ namespace UriTemplateTests
                 }
                 else
                 {
-                    Assert.True(false, $"Unexpected parameter: (name: '{name}', value: '{value}')");
+                    Assert.Fail($"Unexpected parameter: (name: '{name}', value: '{value}')");
                 }
             }
         }
@@ -72,7 +72,7 @@ namespace UriTemplateTests
                 }
                 else
                 {
-                    Assert.True(false, $"Unexpected parameter: (name: '{name}', value: '{value}')");
+                    Assert.Fail($"Unexpected parameter: (name: '{name}', value: '{value}')");
                 }
             }
         }

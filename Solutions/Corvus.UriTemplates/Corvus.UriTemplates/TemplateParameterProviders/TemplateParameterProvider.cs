@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using CommunityToolkit.HighPerformance;
 
@@ -15,8 +16,10 @@ public static class TemplateParameterProvider
 {
     private const string UriReservedSymbols = ":/?#[]@!$&'()*+,;=";
     private const string UriUnreservedSymbols = "-._~";
-    private static readonly ReadOnlyMemory<char> PossibleHexChars = "0123456789AaBbCcDdEeF".AsMemory();
-    private static readonly char[] HexDigits = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+    private static readonly SearchValues<char> PossibleHexChars = SearchValues.Create("0123456789AaBbCcDdEeF");
+#pragma warning disable SA1010 // Opening square brackets should be spaced correctly - Analysers need to catch up with the new syntax.
+    private static readonly char[] HexDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
+#pragma warning restore SA1010 // Opening square brackets should be spaced correctly
 
     /// <summary>
     /// Encode a value to the output.
@@ -55,15 +58,16 @@ public static class TemplateParameterProvider
             source[0] = c;
             Span<byte> bytes = stackalloc byte[Encoding.UTF8.GetMaxByteCount(1)];
             int encoded = Encoding.UTF8.GetBytes(source, bytes);
-            foreach (byte abyte in bytes[..encoded])
+            foreach (byte aByte in bytes[..encoded])
             {
                 output.Write('%');
-                output.Write(HexDigits[(abyte & 240) >> 4]);
-                output.Write(HexDigits[abyte & 15]);
+                output.Write(HexDigits[(aByte & 240) >> 4]);
+                output.Write(HexDigits[aByte & 15]);
             }
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsEscapeSequence(ReadOnlySpan<char> value, int i)
     {
         if (value.Length <= i + 2)
@@ -74,14 +78,9 @@ public static class TemplateParameterProvider
         return IsHex(value[i + 1]) && IsHex(value[i + 2]);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsHex(char v)
     {
-#if NET6_0
-        Span<char> vSpan = stackalloc char[1];
-        vSpan[0] = v;
-        return PossibleHexChars.Span.Contains(vSpan, StringComparison.Ordinal);
-#else
-        return PossibleHexChars.Span.Contains(v);
-#endif
+        return PossibleHexChars.Contains(v);
     }
 }

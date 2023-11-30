@@ -3,7 +3,6 @@
 // </copyright>
 
 using System.Buffers;
-using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 
 namespace Corvus.UriTemplates;
@@ -47,7 +46,7 @@ public static class UriTemplateParserFactory
     /// <param name="uriTemplate">The URI template for which to create the parser.</param>
     /// <returns>An instance of a parser for the given URI template.</returns>
     /// <remarks>
-    /// Note that this operation allocates memory, but <see cref="IUriTemplateParser.ParseUri{TState}(ReadOnlySpan{char}, ParameterCallback{TState}, ref TState)"/>
+    /// Note that this operation allocates memory, but <see cref="IUriTemplateParser.ParseUri{TState}(in ReadOnlySpan{char}, ParameterCallback{TState}, ref TState)"/>
     /// is a low-allocation method. Ideally, you should cache the results of calling this method for a given URI template.
     /// </remarks>
     public static IUriTemplateParser CreateParser(ReadOnlySpan<char> uriTemplate)
@@ -61,7 +60,7 @@ public static class UriTemplateParserFactory
     /// <param name="uriTemplate">The URI template for which to create the parser.</param>
     /// <returns>An instance of a parser for the given URI template.</returns>
     /// <remarks>
-    /// Note that this operation allocates memory, but <see cref="IUriTemplateParser.ParseUri{TState}(ReadOnlySpan{char}, ParameterCallback{TState}, ref TState)"/>
+    /// Note that this operation allocates memory, but <see cref="IUriTemplateParser.ParseUri{TState}(in ReadOnlySpan{char}, ParameterCallback{TState}, ref TState)"/>
     /// is a low-allocation method. Ideally, you should cache the results of calling this method for a given URI template.
     /// </remarks>
     public static IUriTemplateParser CreateParser(string uriTemplate)
@@ -69,7 +68,7 @@ public static class UriTemplateParserFactory
         return new UriParser(CreateParserElements(uriTemplate.AsSpan()));
     }
 
-    private static IEnumerable<IUriTemplatePatternElement> CreateParserElements(ReadOnlySpan<char> uriTemplate)
+    private static IUriTemplatePatternElement[] CreateParserElements(ReadOnlySpan<char> uriTemplate)
     {
         string template = TemplateConversion.Replace(uriTemplate.ToString(), @"$+\?");
         ReadOnlySpan<char> templateSpan = template.AsSpan();
@@ -94,7 +93,7 @@ public static class UriTemplateParserFactory
             elements.Add(new LiteralSequence(templateSpan[lastIndex..]));
         }
 
-        return elements;
+        return elements.ToArray();
 
         static int UnescapeQuestionMarkInPlace(Span<char> literal)
         {
@@ -165,32 +164,35 @@ public static class UriTemplateParserFactory
     private readonly ref struct Consumer
     {
         private readonly ReadOnlySpan<IUriTemplatePatternElement> elements;
+        private readonly int elementsLength;
 
-        public Consumer(ReadOnlySpan<IUriTemplatePatternElement> elements)
+        public Consumer(in ReadOnlySpan<IUriTemplatePatternElement> elements)
         {
             this.elements = elements;
+            this.elementsLength = elements.Length;
         }
 
-        public bool Consume<TState>(ReadOnlySpan<char> segment, out int charsConsumed, ParameterCallback<TState>? parameterCallback, ref TState state)
+        public bool Consume<TState>(in ReadOnlySpan<char> segment, out int charsConsumed, in ParameterCallback<TState>? parameterCallback, ref TState state)
         {
+            int segmentLength = segment.Length;
             charsConsumed = 0;
 
             // First, we attempt to consume, advancing through the span until we reach a match
             // (Recall that a UriTemplate is allowed to match the tail of a string - any prefix can be ignored.)
             int consumedBySequence = 0;
-            while (charsConsumed < segment.Length && !this.ConsumeCore(segment[charsConsumed..], out consumedBySequence, parameterCallback, ref state))
+            while (charsConsumed < segmentLength && !this.ConsumeCore(segment[charsConsumed..], out consumedBySequence, parameterCallback, ref state))
             {
                 // We didn't match at that location, so tell the parameter callback to reset the accumulated parameters,
                 // and advance a character
-                parameterCallback?.Invoke(true, ReadOnlySpan<char>.Empty, ReadOnlySpan<char>.Empty, ref state);
-                charsConsumed++;
+                parameterCallback?.Invoke(true, default, default, ref state);
+                charsConsumed += consumedBySequence > 0 ? consumedBySequence : 1;
             }
 
-            if (charsConsumed == segment.Length)
+            if (charsConsumed == segmentLength)
             {
                 // We didn't find a match, so we tell the parameter callback to reset the accumulated parameters,
                 // and reset the characters consumed.
-                parameterCallback?.Invoke(true, ReadOnlySpan<char>.Empty, ReadOnlySpan<char>.Empty, ref state);
+                parameterCallback?.Invoke(true, default, default, ref state);
                 charsConsumed = 0;
                 return false;
             }
@@ -199,22 +201,22 @@ public static class UriTemplateParserFactory
             return true;
         }
 
-        public bool MatchesAsTail<TState>(ReadOnlySpan<char> segment, out int charsConsumed, ref TState state)
+        public bool MatchesAsTail<TState>(in ReadOnlySpan<char> segment, out int charsConsumed, ref TState state)
         {
             return this.ConsumeCore(segment, out charsConsumed, null, ref state);
         }
 
-        private bool ConsumeCore<TState>(ReadOnlySpan<char> segment, out int charsConsumed, ParameterCallback<TState>? parameterCallback, ref TState state)
+        private bool ConsumeCore<TState>(in ReadOnlySpan<char> segment, out int charsConsumed, in ParameterCallback<TState>? parameterCallback, ref TState state)
         {
             charsConsumed = 0;
 
-            for (int i = 0; i < this.elements.Length; ++i)
+            for (int i = 0; i < this.elementsLength; ++i)
             {
-                IUriTemplatePatternElement element = this.elements[i];
-                Consumer tail = new(this.elements.Length > (i + 1) ? this.elements[(i + 1)..] : ReadOnlySpan<IUriTemplatePatternElement>.Empty);
-                if (!element.Consume(segment[charsConsumed..], out int localConsumed, parameterCallback, ref tail, ref state))
+                Consumer tail = new(this.elementsLength > (i + 1) ? this.elements[(i + 1)..] : default);
+                if (!this.elements[i].Consume(segment[charsConsumed..], out int localConsumed, parameterCallback, ref tail, ref state))
                 {
-                    charsConsumed = 0;
+                    // We ensure that local consumed is set correctly by the target for where we can try again.
+                    charsConsumed += localConsumed;
                     return false;
                 }
 
@@ -232,14 +234,25 @@ public static class UriTemplateParserFactory
     {
         private readonly IUriTemplatePatternElement[] elements;
 
-        public UriParser(IEnumerable<IUriTemplatePatternElement> elements)
+        public UriParser(in IUriTemplatePatternElement[] elements)
         {
-            var list = elements.ToList();
-            this.elements = list.ToArray();
+            this.elements = elements;
         }
 
         /// <inheritdoc/>
-        public bool ParseUri<TState>(ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state)
+        public bool IsMatch(in ReadOnlySpan<char> uri)
+        {
+            Consumer sequence = new(this.elements.AsSpan());
+            int state = 0;
+            bool result = sequence.Consume(uri, out int charsConsumed, null, ref state);
+
+            // We have successfully parsed the uri if all of our elements successfully consumed
+            // the contents they were expecting, and we have no characters left over.
+            return result && charsConsumed == uri.Length;
+        }
+
+        /// <inheritdoc/>
+        public bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state)
         {
             Consumer sequence = new(this.elements.AsSpan());
             bool result = sequence.Consume(uri, out int charsConsumed, parameterCallback, ref state);
@@ -255,7 +268,7 @@ public static class UriTemplateParserFactory
     /// </summary>
     private sealed class LiteralSequence : IUriTemplatePatternElement
     {
-        private readonly ReadOnlyMemory<char> sequence;
+        private readonly char[] sequence;
 
         public LiteralSequence(ReadOnlySpan<char> sequence)
         {
@@ -265,10 +278,18 @@ public static class UriTemplateParserFactory
         /// <inheritdoc/>
         public bool Consume<TState>(ReadOnlySpan<char> segment, out int charsConsumed, ParameterCallback<TState>? parameterCallback, ref Consumer tail, ref TState state)
         {
-            if (segment.StartsWith(this.sequence.Span))
+            int index = segment.IndexOf(this.sequence);
+            if (index == 0)
             {
                 charsConsumed = this.sequence.Length;
                 return true;
+            }
+
+            if (index == -1)
+            {
+                // No point in looking ahead as the literal sequence doesn't appear anywhere.
+                charsConsumed = this.sequence.Length;
+                return false;
             }
 
             charsConsumed = 0;
@@ -281,24 +302,23 @@ public static class UriTemplateParserFactory
     /// </summary>
     private sealed class ExpressionSequence : IUriTemplatePatternElement
     {
-        private static readonly ReadOnlyMemory<char> FragmentTerminators = ",".AsMemory();
-        private static readonly ReadOnlyMemory<char> SlashTerminators = "/?".AsMemory();
-        private static readonly ReadOnlyMemory<char> QueryTerminators = "&#".AsMemory();
-        private static readonly ReadOnlyMemory<char> SemicolonTerminators = ";/?#".AsMemory();
-        private static readonly ReadOnlyMemory<char> DotTerminators = "./?#".AsMemory();
-        private static readonly ReadOnlyMemory<char> AllOtherTerminators = "/?&".AsMemory();
-
-        private readonly ReadOnlyMemory<char>[] parameterNames;
+        private static readonly SearchValues<char> FragmentTerminators = SearchValues.Create(",");
+        private static readonly SearchValues<char> SlashTerminators = SearchValues.Create("/?");
+        private static readonly SearchValues<char> QueryTerminators = SearchValues.Create("&#");
+        private static readonly SearchValues<char> SemicolonTerminators = SearchValues.Create(";/?#");
+        private static readonly SearchValues<char> DotTerminators = SearchValues.Create("./?#");
+        private static readonly SearchValues<char> AllOtherTerminators = SearchValues.Create("/?&");
+        private readonly string[] parameterNames;
         private readonly char prefix;
-        private readonly ReadOnlyMemory<char> terminators;
+        private readonly SearchValues<char> terminators;
 
         public ExpressionSequence(string[] parameterNames, char prefix)
         {
-            this.parameterNames = parameterNames.Select(s => s.AsMemory()).ToArray();
+            this.parameterNames = parameterNames;
             this.prefix = prefix;
             this.terminators = GetTerminators(prefix);
 
-            static ReadOnlyMemory<char> GetTerminators(char prefix)
+            static SearchValues<char> GetTerminators(char prefix)
             {
                 return prefix switch
                 {
@@ -323,9 +343,8 @@ public static class UriTemplateParserFactory
         {
             charsConsumed = 0;
             int parameterIndex = 0;
-            ReadOnlySpan<char> terminatorsSpan = this.terminators.Span;
             State state = this.prefix != '\0' ? State.LookingForPrefix : State.LookingForParams;
-            ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex].Span;
+            ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex];
             char currentPrefix = this.prefix;
             bool foundMatches = false;
             while (charsConsumed < segment.Length)
@@ -371,11 +390,7 @@ public static class UriTemplateParserFactory
                         // Now we are looking ahead to the next terminator, or the end of the segment
                         while (segmentEnd < segment.Length)
                         {
-#if NET6_0
-                            if (terminatorsSpan.Contains(segment.Slice(segmentEnd, 1), StringComparison.Ordinal))
-#else
-                            if (terminatorsSpan.Contains(segment[segmentEnd]))
-#endif
+                            if (this.terminators.Contains(segment[segmentEnd]))
                             {
                                 // Break out of the while because we've found the end.
                                 break;
@@ -407,7 +422,7 @@ public static class UriTemplateParserFactory
                         }
 
                         // Otherwise, start looking for the next parameter
-                        currentParameterName = this.parameterNames[parameterIndex].Span;
+                        currentParameterName = this.parameterNames[parameterIndex];
 
                         state = this.prefix != '\0' ? State.LookingForPrefix : State.LookingForParams;
                         break;
@@ -423,12 +438,13 @@ public static class UriTemplateParserFactory
     /// </summary>
     private sealed class QueryExpressionSequence : IUriTemplatePatternElement
     {
-        private readonly ReadOnlyMemory<char>[] parameterNames;
+        private static readonly SearchValues<char> Terminators = SearchValues.Create("/?&");
+        private readonly string[] parameterNames;
         private readonly char prefix;
 
         public QueryExpressionSequence(string[] parameterNames, char prefix)
         {
-            this.parameterNames = parameterNames.Select(s => s.AsMemory()).ToArray();
+            this.parameterNames = parameterNames;
             this.prefix = prefix;
         }
 
@@ -444,7 +460,7 @@ public static class UriTemplateParserFactory
             charsConsumed = 0;
             int parameterIndex = 0;
             State state = State.LookingForPrefix;
-            ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex].Span;
+            ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex];
             char currentPrefix = this.prefix;
             bool foundMatches = false;
             while (charsConsumed < segment.Length)
@@ -512,7 +528,7 @@ public static class UriTemplateParserFactory
                             }
 
                             // Go round again, but try the next parameter name.
-                            currentParameterName = this.parameterNames[parameterIndex].Span;
+                            currentParameterName = this.parameterNames[parameterIndex];
                         }
                         else
                         {
@@ -548,7 +564,7 @@ public static class UriTemplateParserFactory
                                     return true;
                                 }
 
-                                currentParameterName = this.parameterNames[parameterIndex].Span;
+                                currentParameterName = this.parameterNames[parameterIndex];
                             }
                             else
                             {
@@ -559,8 +575,7 @@ public static class UriTemplateParserFactory
                                 // So we did match the parameter and reach '=' now we are looking ahead to the next terminator, or the end of the segment
                                 while (segmentEnd < segment.Length)
                                 {
-                                    char terminator = segment[segmentEnd];
-                                    if (terminator == '/' || terminator == '?' || terminator == '&')
+                                    if (Terminators.Contains(segment[segmentEnd]))
                                     {
                                         // Break out because we've found the end.
                                         break;
@@ -585,7 +600,7 @@ public static class UriTemplateParserFactory
                                 }
 
                                 // Otherwise, start looking for the next parameter
-                                currentParameterName = this.parameterNames[parameterIndex].Span;
+                                currentParameterName = this.parameterNames[parameterIndex];
 
                                 state = State.LookingForPrefix;
                             }

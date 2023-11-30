@@ -51,10 +51,13 @@ public class UriTemplateTable
     {
         foreach (KeyValuePair<string, UriTemplate> template in this.templates)
         {
-            IDictionary<string, object>? parameters = template.Value.GetParameters(url, order);
-            if (parameters != null)
+            if (template.Value.IsMatch(url, order))
             {
-                return new TemplateMatch() { Key = template.Key, Parameters = parameters, Template = template.Value };
+                IDictionary<string, object>? parameters = template.Value.GetParameters(url, order);
+                if (parameters != null)
+                {
+                    return new TemplateMatch() { Key = template.Key, Parameters = parameters, Template = template.Value };
+                }
             }
         }
 

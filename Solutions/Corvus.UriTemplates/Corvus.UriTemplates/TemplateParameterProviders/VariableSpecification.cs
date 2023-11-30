@@ -21,7 +21,7 @@ public ref struct VariableSpecification
     /// <param name="variableName">The variable name.</param>
     /// <param name="explode">Whether to explode the variable.</param>
     /// <param name="prefixLength">The prefix length.</param>
-    /// <param name="first">Wether this is the first variable in the template.</param>
+    /// <param name="first">Whether this is the first variable in the template.</param>
     public VariableSpecification(OperatorInfo operatorInfo, ReadOnlySpan<char> variableName, bool explode = false, int prefixLength = 0, bool first = true)
     {
         this.OperatorInfo = operatorInfo;
@@ -62,7 +62,6 @@ public ref struct VariableSpecification
     /// <param name="output">The span to which to copy the result.</param>
     public void CopyTo(IBufferWriter<char> output)
     {
-        int written = 0;
         if (this.First)
         {
             if (this.OperatorInfo.First != '\0')
@@ -72,7 +71,6 @@ public ref struct VariableSpecification
         }
 
         output.Write(this.VarName);
-        written += this.VarName.Length;
 
         if (this.Explode)
         {
@@ -83,9 +81,9 @@ public ref struct VariableSpecification
         {
             output.Write(':');
 
-            Span<char> buffer = stackalloc char[256];
+            Span<char> buffer = output.GetSpan(128);
             this.PrefixLength.TryFormat(buffer, out int charsWritten);
-            output.Write(buffer[..charsWritten]);
+            output.Advance(charsWritten);
         }
     }
 

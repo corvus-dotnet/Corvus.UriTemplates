@@ -12,7 +12,7 @@ namespace Corvus.UriTemplates.TemplateParameterProviders;
 /// <typeparam name="TParameterPayload">The type of the parameter.</typeparam>
 /// <remarks>
 /// This allows us to abstract our parameter provision mechanism to
-/// efficiently format parmeters into our output.
+/// efficiently format parameters into our output.
 /// </remarks>
 public interface ITemplateParameterProvider<TParameterPayload>
 {
@@ -25,11 +25,6 @@ public interface ITemplateParameterProvider<TParameterPayload>
     /// <returns>
     ///     <see cref="VariableProcessingState.Success"/> if the variable was successfully processed,
     ///     <see cref="VariableProcessingState.NotProcessed"/> if the parameter was not present, or
-    ///     <see cref="VariableProcessingState.Failure"/> if the parmeter could not be processed because it was incompatible with the variable specification in the template.</returns>
-#if NET6_0
+    ///     <see cref="VariableProcessingState.Failure"/> if the parameter could not be processed because it was incompatible with the variable specification in the template.</returns>
     VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in TParameterPayload parameters, IBufferWriter<char> output);
-
-#else
-    static abstract VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in TParameterPayload parameters, IBufferWriter<char> output);
-#endif
 }

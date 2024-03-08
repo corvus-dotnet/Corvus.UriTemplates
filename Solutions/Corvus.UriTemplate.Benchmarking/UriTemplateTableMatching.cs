@@ -34,7 +34,7 @@ public class UriTemplateTableMatching
         this.tavisTemplateTable.Add("root", new Tavis.UriTemplates.UriTemplate("/"));
         builder.Add("/", "root");
 
-        for (int i = 0; i < 300; ++i)
+        for (int i = 0; i < 3000; ++i)
         {
             string guid = Guid.NewGuid().ToString();
             string uri1 = $"/{guid}/{{bar}}";
@@ -126,7 +126,7 @@ public class UriTemplateTableMatching
     }
 
     /// <summary>
-    /// Extract parameters from a URI template using the Corvus implementation of the Tavis API.
+    /// Extract parameters from a URI template using the native Corvus implementation.
     /// </summary>
     /// <returns>
     /// A result, to ensure that the code under test does not get optimized out of existence.
@@ -135,6 +135,37 @@ public class UriTemplateTableMatching
     public bool MatchCorvus()
     {
         if (this.corvusTemplateTable!.TryMatch(Uri, out TemplateMatchResult<string> match))
+        {
+            int count = 0;
+            match.Parser.ParseUri(Uri, Count, ref count);
+            return true;
+        }
+
+        return false;
+
+        static void Count(bool reset, ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref int state)
+        {
+            if (reset)
+            {
+                state = 0;
+            }
+            else
+            {
+                state++;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Extract parameters from a URI template using the Corvus implementation of the Tavis API, requiring rooted templates.
+    /// </summary>
+    /// <returns>
+    /// A result, to ensure that the code under test does not get optimized out of existence.
+    /// </returns>
+    [Benchmark]
+    public bool MatchCorvusRooted()
+    {
+        if (this.corvusTemplateTable!.TryMatch(Uri, out TemplateMatchResult<string> match, true))
         {
             int count = 0;
             match.Parser.ParseUri(Uri, Count, ref count);

@@ -74,7 +74,7 @@ param (
     [version] $BuildModuleVersion = "1.5.2",
 
     [Parameter()]
-    [version] $InvokeBuildModuleVersion = "5.7.1"
+    [version] $InvokeBuildModuleVersion = "5.10.3"
 )
 
 $ErrorActionPreference = $ErrorActionPreference ? $ErrorActionPreference : 'Stop'

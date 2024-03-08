@@ -32,6 +32,7 @@ public sealed class UriTemplateTable<TMatch>
     /// </summary>
     /// <param name="uri">The URI to match.</param>
     /// <param name="match">The matched result.</param>
+    /// <param name="requiresRootedMatch">If true, then the template requires a rooted match and will not ignore prefixes. This is more efficient when using a fully-qualified template.</param>
     /// <returns><see langword="true"/> if the URI matched a value in the table.</returns>
     /// <remarks>
     /// <para>
@@ -42,12 +43,12 @@ public sealed class UriTemplateTable<TMatch>
     /// It is, however, safe to dispose in either case.
     /// </para>
     /// </remarks>
-    public bool TryMatch(ReadOnlySpan<char> uri, [MaybeNullWhen(false)] out TemplateMatchResult<TMatch> match)
+    public bool TryMatch(ReadOnlySpan<char> uri, [MaybeNullWhen(false)] out TemplateMatchResult<TMatch> match, in bool requiresRootedMatch = false)
     {
         for (int i = 0; i < this.parsers.Length; ++i)
         {
             IUriTemplateParser parser = this.parsers[i];
-            if (parser.IsMatch(uri))
+            if (parser.IsMatch(uri, requiresRootedMatch))
             {
                 match = new(this.matches[i], parser);
                 return true;

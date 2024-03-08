@@ -295,12 +295,7 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
 
         VariableProcessingState outerSuccess = ProcessVariable(parameterProvider, ref varSpec, output, multivariableExpression, resolvePartially, parameters, parameterNameCallback, ref state);
 
-        if (outerSuccess == VariableProcessingState.Failure)
-        {
-            return false;
-        }
-
-        return true;
+        return outerSuccess != VariableProcessingState.Failure;
     }
 
     private static VariableProcessingState ProcessVariable<TState>(TParameterProvider parameterProvider, ref VariableSpecification varSpec, IBufferWriter<char> output, bool multiVariableExpression, bool resolvePartially, in TParameterPayload parameters, ParameterNameCallback<TState>? parameterNameCallback, ref TState state)

@@ -46,7 +46,7 @@ public static class UriTemplateParserFactory
     /// <param name="uriTemplate">The URI template for which to create the parser.</param>
     /// <returns>An instance of a parser for the given URI template.</returns>
     /// <remarks>
-    /// Note that this operation allocates memory, but <see cref="IUriTemplateParser.ParseUri{TState}(in ReadOnlySpan{char}, ParameterCallback{TState}, ref TState)"/>
+    /// Note that this operation allocates memory, but <see cref="IUriTemplateParser.ParseUri{TState}(in ReadOnlySpan{char}, ParameterCallback{TState}, ref TState, in bool)"/>
     /// is a low-allocation method. Ideally, you should cache the results of calling this method for a given URI template.
     /// </remarks>
     public static IUriTemplateParser CreateParser(ReadOnlySpan<char> uriTemplate)
@@ -60,7 +60,7 @@ public static class UriTemplateParserFactory
     /// <param name="uriTemplate">The URI template for which to create the parser.</param>
     /// <returns>An instance of a parser for the given URI template.</returns>
     /// <remarks>
-    /// Note that this operation allocates memory, but <see cref="IUriTemplateParser.ParseUri{TState}(in ReadOnlySpan{char}, ParameterCallback{TState}, ref TState)"/>
+    /// Note that this operation allocates memory, but <see cref="IUriTemplateParser.ParseUri{TState}(in ReadOnlySpan{char}, ParameterCallback{TState}, ref TState, in bool)"/>
     /// is a low-allocation method. Ideally, you should cache the results of calling this method for a given URI template.
     /// </remarks>
     public static IUriTemplateParser CreateParser(string uriTemplate)
@@ -172,20 +172,27 @@ public static class UriTemplateParserFactory
             this.elementsLength = elements.Length;
         }
 
-        public bool Consume<TState>(in ReadOnlySpan<char> segment, out int charsConsumed, in ParameterCallback<TState>? parameterCallback, ref TState state)
+        public bool Consume<TState>(in bool requiresRootedMatch, in ReadOnlySpan<char> segment, out int charsConsumed, in ParameterCallback<TState>? parameterCallback, ref TState state)
         {
             int segmentLength = segment.Length;
             charsConsumed = 0;
 
             // First, we attempt to consume, advancing through the span until we reach a match
-            // (Recall that a UriTemplate is allowed to match the tail of a string - any prefix can be ignored.)
+            // (Recall that na UriTemplate is normally allowed to match the tail of a string - any prefix can be ignored.)
             int consumedBySequence = 0;
             while (charsConsumed < segmentLength && !this.ConsumeCore(segment[charsConsumed..], out consumedBySequence, parameterCallback, ref state))
             {
-                // We didn't match at that location, so tell the parameter callback to reset the accumulated parameters,
-                // and advance a character
-                parameterCallback?.Invoke(true, default, default, ref state);
-                charsConsumed += consumedBySequence > 0 ? consumedBySequence : 1;
+                if (requiresRootedMatch)
+                {
+                    charsConsumed = segmentLength;
+                }
+                else
+                {
+                    // We didn't match at that location, so tell the parameter callback to reset the accumulated parameters,
+                    // and advance a character
+                    parameterCallback?.Invoke(true, default, default, ref state);
+                    charsConsumed += consumedBySequence > 0 ? consumedBySequence : 1;
+                }
             }
 
             if (charsConsumed == segmentLength)
@@ -240,11 +247,11 @@ public static class UriTemplateParserFactory
         }
 
         /// <inheritdoc/>
-        public bool IsMatch(in ReadOnlySpan<char> uri)
+        public bool IsMatch(in ReadOnlySpan<char> uri, bool requiresRootedMatch = false)
         {
             Consumer sequence = new(this.elements.AsSpan());
             int state = 0;
-            bool result = sequence.Consume(uri, out int charsConsumed, null, ref state);
+            bool result = sequence.Consume(requiresRootedMatch, uri, out int charsConsumed, null, ref state);
 
             // We have successfully parsed the uri if all of our elements successfully consumed
             // the contents they were expecting, and we have no characters left over.
@@ -252,10 +259,10 @@ public static class UriTemplateParserFactory
         }
 
         /// <inheritdoc/>
-        public bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state)
+        public bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state, in bool requiresRootedMatch = false)
         {
             Consumer sequence = new(this.elements.AsSpan());
-            bool result = sequence.Consume(uri, out int charsConsumed, parameterCallback, ref state);
+            bool result = sequence.Consume(requiresRootedMatch, uri, out int charsConsumed, parameterCallback, ref state);
 
             // We have successfully parsed the uri if all of our elements successfully consumed
             // the contents they were expecting, and we have no characters left over.

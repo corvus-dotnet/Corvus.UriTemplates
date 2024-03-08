@@ -23,8 +23,9 @@ public interface IUriTemplateParser
     /// Determines if the UriTemplate matches the given URI.
     /// </summary>
     /// <param name="uri">The URI to match.</param>
+    /// <param name="requiresRootedMatch">If true, then the template requires a rooted match and will not ignore prefixes. This is more efficient when using a fully-qualified template.</param>
     /// <returns><see langword="true"/> if the template is a match for the URI.</returns>
-    public bool IsMatch(in ReadOnlySpan<char> uri);
+    public bool IsMatch(in ReadOnlySpan<char> uri, bool requiresRootedMatch = false);
 
     /// <summary>
     /// Parses the given URI, calling your parameter callback for each named parameter discovered.
@@ -33,6 +34,7 @@ public interface IUriTemplateParser
     /// <param name="uri">The URI to parse.</param>
     /// <param name="parameterCallback">Called by the parser for each parameter that is discovered.</param>
     /// <param name="state">The state to pass to the callback.</param>
+    /// <param name="requiresRootedMatch">If true, then the template requires a rooted match and will not ignore prefixes. This is more efficient when using a fully-qualified template.</param>
     /// <returns><see langword="true"/> if the uri was successfully parsed, otherwise false.</returns>
     /// <remarks>
     /// <para>
@@ -44,5 +46,5 @@ public interface IUriTemplateParser
     /// those parameters are invalid, and should be disregarded.
     /// </para>
     /// </remarks>
-    bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state);
+    bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state, in bool requiresRootedMatch = false);
 }

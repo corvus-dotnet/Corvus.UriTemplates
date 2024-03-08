@@ -9,9 +9,10 @@ using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using Perfolizer.Mathematics.OutlierDetection;
 
-BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).RunAll(
-        ManualConfig.Create(DefaultConfig.Instance)
-        .AddJob(Job.Default
-            .WithRuntime(CoreRuntime.Core80)
-            .WithOutlierMode(OutlierMode.RemoveAll)
-            .WithStrategy(RunStrategy.Throughput)));
+BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(
+        config:
+            ManualConfig.Create(DefaultConfig.Instance)
+            .AddJob(Job.Default
+                .WithRuntime(CoreRuntime.Core80)
+                .WithOutlierMode(OutlierMode.RemoveAll)
+                .WithStrategy(RunStrategy.Throughput)));

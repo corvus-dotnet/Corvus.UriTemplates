@@ -90,7 +90,11 @@ public static partial class UriExtensions
     /// <param name="state">The state for the callback.</param>
     public static void GetQueryStringParameters<TState>(this Uri target, QueryStringParameterCallback<TState> callback, ref TState state)
     {
+#if NET8_0_OR_GREATER
         MatchQueryParameters(target.Query, callback, ref state);
+#else
+        MatchQueryParameters(target.Query.AsSpan(), callback, ref state);
+#endif
     }
 
     private static bool MatchQueryParameters<TState>(ReadOnlySpan<char> query, QueryStringParameterCallback<TState> callback, ref TState state)

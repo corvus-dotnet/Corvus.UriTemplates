@@ -47,4 +47,27 @@ public interface IUriTemplateParser
     /// </para>
     /// </remarks>
     bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state, in bool requiresRootedMatch = false);
+
+#if !NET8_0_OR_GREATER
+    /// <summary>
+    /// Parses the given URI, calling your parameter callback for each named parameter discovered.
+    /// </summary>
+    /// <typeparam name="TState">The type of the state to pass.</typeparam>
+    /// <param name="uri">The URI to parse.</param>
+    /// <param name="parameterCallback">Called by the parser for each parameter that is discovered.</param>
+    /// <param name="state">The state to pass to the callback.</param>
+    /// <param name="requiresRootedMatch">If true, then the template requires a rooted match and will not ignore prefixes. This is more efficient when using a fully-qualified template.</param>
+    /// <returns><see langword="true"/> if the uri was successfully parsed, otherwise false.</returns>
+    /// <remarks>
+    /// <para>
+    /// This is a low-allocation operation, but you should take care with your implementation of your
+    /// <see cref="ParameterCallback{T}"/> if you wish to minimize allocation in your call tree.
+    /// </para>
+    /// <para>
+    /// The parameter callbacks occur as the parameters are matched. If the parse operation ultimately fails,
+    /// those parameters are invalid, and should be disregarded.
+    /// </para>
+    /// </remarks>
+    bool ParseUri<TState>(string uri, ParameterCallback<TState> parameterCallback, ref TState state, in bool requiresRootedMatch = false);
+#endif
 }

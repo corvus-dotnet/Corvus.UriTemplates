@@ -15,30 +15,30 @@ namespace UriTemplateTests
 
             int state = 0;
 
-            corvusTemplate!.EnumerateParameters("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=123232323&hash=23ADE34FAE&callback=http%3A%2F%2Fexample.com%2Fcallback", Callback, ref state);
+            corvusTemplate.EnumerateParameters("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=123232323&hash=23ADE34FAE&callback=http%3A%2F%2Fexample.com%2Fcallback", Callback, ref state);
 
             Assert.Equal(3, state);
 
             void Callback(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref int count)
             {
-                if (name.SequenceEqual("parentRequestId"))
+                if (name.SequenceEqual("parentRequestId".AsSpan()))
                 {
-                    Assert.True(value.SequenceEqual("123232323"), $"parentRequestId was {value}");
+                    Assert.True(value.SequenceEqual("123232323".AsSpan()), $"parentRequestId was {value.ToString()}");
                     count++;
                 }
-                else if (name.SequenceEqual("hash"))
+                else if (name.SequenceEqual("hash".AsSpan()))
                 {
-                    Assert.True(value.SequenceEqual("23ADE34FAE"), $"hash was {value}");
+                    Assert.True(value.SequenceEqual("23ADE34FAE".AsSpan()), $"hash was {value.ToString()}");
                     count++;
                 }
-                else if (name.SequenceEqual("callback"))
+                else if (name.SequenceEqual("callback".AsSpan()))
                 {
-                    Assert.True(value.SequenceEqual("http%3A%2F%2Fexample.com%2Fcallback"), $"callback was {value}");
+                    Assert.True(value.SequenceEqual("http%3A%2F%2Fexample.com%2Fcallback".AsSpan()), $"callback was {value.ToString()}");
                     count++;
                 }
                 else
                 {
-                    Assert.Fail($"Unexpected parameter: (name: '{name}', value: '{value}')");
+                    Assert.Fail($"Unexpected parameter: (name: '{name.ToString()}', value: '{value.ToString()}')");
                 }
             }
         }
@@ -49,30 +49,30 @@ namespace UriTemplateTests
             IUriTemplateParser corvusTemplate = UriTemplateParserFactory.CreateParser("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId={parentRequestId}{&hash,callback}");
 
             int state = 0;
-            corvusTemplate!.EnumerateParameters("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=123232323&hash=23ADE34FAE&callback=http%3A%2F%2Fexample.com%2Fcallback", Callback, ref state, 1);
+            corvusTemplate.EnumerateParameters("http://example.com/Glimpse.axd?n=glimpse_ajax&parentRequestId=123232323&hash=23ADE34FAE&callback=http%3A%2F%2Fexample.com%2Fcallback", Callback, ref state, 1);
 
             Assert.Equal(3, state);
 
             void Callback(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref int count)
             {
-                if (name.SequenceEqual("parentRequestId"))
+                if (name.SequenceEqual("parentRequestId".AsSpan()))
                 {
-                    Assert.True(value.SequenceEqual("123232323"), $"parentRequestId was {value}");
+                    Assert.True(value.SequenceEqual("123232323".AsSpan()), $"parentRequestId was {value.ToString()}");
                     count++;
                 }
-                else if (name.SequenceEqual("hash"))
+                else if (name.SequenceEqual("hash".AsSpan()))
                 {
-                    Assert.True(value.SequenceEqual("23ADE34FAE"), $"hash was {value}");
+                    Assert.True(value.SequenceEqual("23ADE34FAE".AsSpan()), $"hash was {value.ToString()}");
                     count++;
                 }
-                else if (name.SequenceEqual("callback"))
+                else if (name.SequenceEqual("callback".AsSpan()))
                 {
-                    Assert.True(value.SequenceEqual("http%3A%2F%2Fexample.com%2Fcallback"), $"callback was {value}");
+                    Assert.True(value.SequenceEqual("http%3A%2F%2Fexample.com%2Fcallback".AsSpan()), $"callback was {value.ToString()}");
                     count++;
                 }
                 else
                 {
-                    Assert.Fail($"Unexpected parameter: (name: '{name}', value: '{value}')");
+                    Assert.Fail($"Unexpected parameter: (name: '{name.ToString()}', value: '{value.ToString()}')");
                 }
             }
         }

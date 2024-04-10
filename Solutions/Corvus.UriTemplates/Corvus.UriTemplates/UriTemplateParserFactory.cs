@@ -132,7 +132,12 @@ public static class UriTemplateParserFactory
                     }
                 }
 
+#if NET8_0_OR_GREATER
                 string[] paramNamesArray = paramNames[0..written];
+#else
+                string[] paramNamesArray = new string[written];
+                paramNames.AsSpan(0, written).CopyTo(paramNamesArray);
+#endif
 
                 string op = m.Groups["op"].Value;
                 return op switch
@@ -258,6 +263,14 @@ public static class UriTemplateParserFactory
             return result && charsConsumed == uri.Length;
         }
 
+#if !NET8_0_OR_GREATER
+        /// <inheritdoc/>
+        public bool ParseUri<TState>(string uri, ParameterCallback<TState> parameterCallback, ref TState state, in bool requiresRootedMatch = false)
+        {
+            return this.ParseUri(uri.AsSpan(), parameterCallback, ref state, requiresRootedMatch);
+        }
+#endif
+
         /// <inheritdoc/>
         public bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state, in bool requiresRootedMatch = false)
         {
@@ -309,15 +322,29 @@ public static class UriTemplateParserFactory
     /// </summary>
     private sealed class ExpressionSequence : IUriTemplatePatternElement
     {
+#if NET8_0_OR_GREATER
         private static readonly SearchValues<char> FragmentTerminators = SearchValues.Create(",");
         private static readonly SearchValues<char> SlashTerminators = SearchValues.Create("/?");
         private static readonly SearchValues<char> QueryTerminators = SearchValues.Create("&#");
         private static readonly SearchValues<char> SemicolonTerminators = SearchValues.Create(";/?#");
         private static readonly SearchValues<char> DotTerminators = SearchValues.Create("./?#");
         private static readonly SearchValues<char> AllOtherTerminators = SearchValues.Create("/?&");
+#else
+        private const string FragmentTerminators = ",";
+        private const string SlashTerminators = "/?";
+        private const string QueryTerminators = "&#";
+        private const string SemicolonTerminators = ";/?#";
+        private const string DotTerminators = "./?#";
+        private const string AllOtherTerminators = "/?&";
+#endif
         private readonly string[] parameterNames;
         private readonly char prefix;
+
+#if NET8_0_OR_GREATER
         private readonly SearchValues<char> terminators;
+#else
+        private readonly string terminators;
+#endif
 
         public ExpressionSequence(string[] parameterNames, char prefix)
         {
@@ -325,6 +352,7 @@ public static class UriTemplateParserFactory
             this.prefix = prefix;
             this.terminators = GetTerminators(prefix);
 
+#if NET8_0_OR_GREATER
             static SearchValues<char> GetTerminators(char prefix)
             {
                 return prefix switch
@@ -337,6 +365,20 @@ public static class UriTemplateParserFactory
                     _ => AllOtherTerminators,
                 };
             }
+#else
+            static string GetTerminators(char prefix)
+            {
+                return prefix switch
+                {
+                    '#' => FragmentTerminators,
+                    '/' => SlashTerminators,
+                    '?' or '&' => QueryTerminators,
+                    ';' => SemicolonTerminators,
+                    '.' => DotTerminators,
+                    _ => AllOtherTerminators,
+                };
+            }
+#endif
         }
 
         private enum State
@@ -351,7 +393,11 @@ public static class UriTemplateParserFactory
             charsConsumed = 0;
             int parameterIndex = 0;
             State state = this.prefix != '\0' ? State.LookingForPrefix : State.LookingForParams;
+#if NET8_0_OR_GREATER
             ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex];
+#else
+            ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex].AsSpan();
+#endif
             char currentPrefix = this.prefix;
             bool foundMatches = false;
             while (charsConsumed < segment.Length)
@@ -397,7 +443,11 @@ public static class UriTemplateParserFactory
                         // Now we are looking ahead to the next terminator, or the end of the segment
                         while (segmentEnd < segment.Length)
                         {
+#if NET8_0_OR_GREATER
                             if (this.terminators.Contains(segment[segmentEnd]))
+#else
+                            if (this.terminators.IndexOf(segment[segmentEnd]) >= 0)
+#endif
                             {
                                 // Break out of the while because we've found the end.
                                 break;
@@ -429,7 +479,11 @@ public static class UriTemplateParserFactory
                         }
 
                         // Otherwise, start looking for the next parameter
+#if NET8_0_OR_GREATER
                         currentParameterName = this.parameterNames[parameterIndex];
+#else
+                        currentParameterName = this.parameterNames[parameterIndex].AsSpan();
+#endif
 
                         state = this.prefix != '\0' ? State.LookingForPrefix : State.LookingForParams;
                         break;
@@ -445,7 +499,11 @@ public static class UriTemplateParserFactory
     /// </summary>
     private sealed class QueryExpressionSequence : IUriTemplatePatternElement
     {
+#if NET8_0_OR_GREATER
         private static readonly SearchValues<char> Terminators = SearchValues.Create("/?&");
+#else
+        private const string Terminators = "/?&";
+#endif
         private readonly string[] parameterNames;
         private readonly char prefix;
 
@@ -467,7 +525,11 @@ public static class UriTemplateParserFactory
             charsConsumed = 0;
             int parameterIndex = 0;
             State state = State.LookingForPrefix;
+#if NET8_0_OR_GREATER
             ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex];
+#else
+            ReadOnlySpan<char> currentParameterName = this.parameterNames[parameterIndex].AsSpan();
+#endif
             char currentPrefix = this.prefix;
             bool foundMatches = false;
             while (charsConsumed < segment.Length)
@@ -535,7 +597,11 @@ public static class UriTemplateParserFactory
                             }
 
                             // Go round again, but try the next parameter name.
+#if NET8_0_OR_GREATER
                             currentParameterName = this.parameterNames[parameterIndex];
+#else
+                            currentParameterName = this.parameterNames[parameterIndex].AsSpan();
+#endif
                         }
                         else
                         {
@@ -570,8 +636,11 @@ public static class UriTemplateParserFactory
 
                                     return true;
                                 }
-
+#if NET8_0_OR_GREATER
                                 currentParameterName = this.parameterNames[parameterIndex];
+#else
+                                currentParameterName = this.parameterNames[parameterIndex].AsSpan();
+#endif
                             }
                             else
                             {
@@ -582,7 +651,11 @@ public static class UriTemplateParserFactory
                                 // So we did match the parameter and reach '=' now we are looking ahead to the next terminator, or the end of the segment
                                 while (segmentEnd < segment.Length)
                                 {
+#if NET8_0_OR_GREATER
                                     if (Terminators.Contains(segment[segmentEnd]))
+#else
+                                    if (Terminators.IndexOf(segment[segmentEnd]) >= 0)
+#endif
                                     {
                                         // Break out because we've found the end.
                                         break;
@@ -607,7 +680,11 @@ public static class UriTemplateParserFactory
                                 }
 
                                 // Otherwise, start looking for the next parameter
+#if NET8_0_OR_GREATER
                                 currentParameterName = this.parameterNames[parameterIndex];
+#else
+                                currentParameterName = this.parameterNames[parameterIndex].AsSpan();
+#endif
 
                                 state = State.LookingForPrefix;
                             }

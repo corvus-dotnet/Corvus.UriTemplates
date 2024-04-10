@@ -1,4 +1,5 @@
-﻿using Corvus.UriTemplates;
+﻿using System;
+using Corvus.UriTemplates;
 using Xunit;
 
 
@@ -38,7 +39,7 @@ namespace UriTemplateTests
             builder.Add("foo/{goo}/{bar}/blob", "PUT", "foo_prefix_goo_put");
             var table = builder.ToTable();
 
-            if (table.TryMatch(url, verb, out TemplateMatchResult<string> match))
+            if (table.TryMatch(url.AsSpan(), verb.AsSpan(), out TemplateMatchResult<string> match))
             {
                 Assert.Equal(key, match.Result);
             }
@@ -77,7 +78,7 @@ namespace UriTemplateTests
             builder.Add("foo/{goo}/{bar}/blob", "PUT", "foo_prefix_goo_put");
             var table = builder.ToTable();
 
-            if (table.TryMatch(url, verb, out TemplateMatchResult<string> match, true))
+            if (table.TryMatch(url.AsSpan(), verb.AsSpan(), out TemplateMatchResult<string> match, true))
             {
                 Assert.Equal(key, match.Result);
             }

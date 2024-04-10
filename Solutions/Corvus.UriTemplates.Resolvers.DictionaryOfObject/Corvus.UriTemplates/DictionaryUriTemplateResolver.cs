@@ -58,10 +58,10 @@ public static class DictionaryUriTemplateResolver
     /// <param name="parameters">The parameters to apply to the template.</param>
     /// <returns><see langword="true"/> if the URI matched the template, and the parameters were resolved successfully.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryResolveResult(ReadOnlySpan<char> template, IBufferWriter<char> output, bool resolvePartially, in IDictionary<string, object?> parameters)
+    public static bool TryResolveResult(ReadOnlySpan<char> template, ref ValueStringBuilder output, bool resolvePartially, in IDictionary<string, object?> parameters)
     {
         object? nullState = default;
-        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(ParameterProvider, template, output, resolvePartially, parameters, null, ref nullState);
+        return UriTemplateResolver<DictionaryTemplateParameterProvider, IDictionary<string, object?>>.TryResolveResult(ParameterProvider, template, ref output, resolvePartially, parameters, null, ref nullState);
     }
 
     /// <summary>

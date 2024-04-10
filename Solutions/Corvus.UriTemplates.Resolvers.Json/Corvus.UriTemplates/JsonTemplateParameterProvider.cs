@@ -2,9 +2,7 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-using System.Buffers;
 using System.Text.Json;
-using CommunityToolkit.HighPerformance;
 using Corvus.UriTemplates.TemplateParameterProviders;
 
 namespace Corvus.UriTemplates;
@@ -217,9 +215,9 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
     private static void AppendNameAndStringValue(ref ValueStringBuilder output, ReadOnlySpan<char> variable, string ifEmpty, JsonElement value, int prefixLength, bool allowReserved)
     {
         output.Append(variable);
-        value.TryGetValue(ProcessString, new AppendNameAndValueState(ifEmpty, prefixLength, allowReserved), out (char[] RentedResult, int Written) result);
-        output.Append(result.RentedResult.AsSpan(0, result.Written));
-        ArrayPool<char>.Shared.Return(result.RentedResult);
+        value.TryGetValue(ProcessString, new AppendNameAndValueState(ifEmpty, prefixLength, allowReserved), out ProcessingResult result);
+        output.Append(result.Span);
+        result.Dispose();
     }
 
     /// <summary>
@@ -234,9 +232,9 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
         switch (value.ValueKind)
         {
             case JsonValueKind.String:
-                value.TryGetValue(ProcessString, new AppendValueState(prefixLength, allowReserved), out (char[] RentedResult, int Written) result);
-                output.Append(result.RentedResult.AsSpan(0, result.Written));
-                ArrayPool<char>.Shared.Return(result.RentedResult);
+                value.TryGetValue(ProcessString, new AppendValueState(prefixLength, allowReserved), out ProcessingResult result);
+                output.Append(result.Span);
+                result.Dispose();
                 break;
             case JsonValueKind.True:
                 output.Append("true");
@@ -251,8 +249,8 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
                 {
                     double valueNumber = value.GetDouble();
 
-                    // The maximum number of digits in a double precision number is 1074; we allocate a little above this
 #if NET8_0_OR_GREATER
+                    // The maximum number of digits in a double precision number is 1074; we allocate a little above this
                     Span<char> buffer = stackalloc char[1100];
                     valueNumber.TryFormat(buffer, out int written);
                     output.Append(buffer[..written]);
@@ -264,36 +262,36 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
         }
     }
 
-    private static bool ProcessString(ReadOnlySpan<char> span, in AppendValueState state, out (char[] RentedResult, int Written) result)
+    private static bool ProcessString(ReadOnlySpan<char> span, in AppendValueState state, out ProcessingResult result)
     {
-        ValueStringBuilder output = default;
+        ValueStringBuilder output = new(span.Length * 2);
         WriteStringValue(ref output, span, state.PrefixLength, state.AllowReserved);
-        char[] rentedResult = ArrayPool<char>.Shared.Rent(output.Length);
-        bool success = output.TryCopyTo(rentedResult, out int written);
-        result = (rentedResult, written);
-        return success;
+        result = new(output.RentedChars, output.Length);
+
+        // Do not dispose the value string builder, we have borrowed its innards
+        return true;
     }
 
-    private static bool ProcessString(ReadOnlySpan<char> span, in AppendNameAndValueState state, out (char[] RentedResult, int Written) result)
+    private static bool ProcessString(ReadOnlySpan<char> span, in AppendNameAndValueState state, out ProcessingResult result)
     {
-        ValueStringBuilder output = default;
+        ValueStringBuilder output;
 
         // Write the name separator
         if (span.Length == 0)
         {
+            output = new(state.IfEmpty.Length * 4);
             output.Append(state.IfEmpty);
         }
         else
         {
+            output = new(span.Length * 4);
             output.Append('=');
         }
 
         WriteStringValue(ref output, span, state.PrefixLength, state.AllowReserved);
 
-        char[] rentedResult = ArrayPool<char>.Shared.Rent(output.Length);
-        bool success = output.TryCopyTo(rentedResult, out int written);
-        result = (rentedResult, written);
-        return success;
+        result = new(output.RentedChars, output.Length);
+        return true;
     }
 
     private static void WriteStringValue(ref ValueStringBuilder output, ReadOnlySpan<char> span, int prefixLength, bool allowReserved)
@@ -349,5 +347,24 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
         }
 
         public bool AllowReserved { get; }
+    }
+
+    private readonly struct ProcessingResult
+    {
+        private readonly char[]? rentedResult;
+        private readonly int written;
+
+        public ProcessingResult(char[]? rentedResult, int written)
+        {
+            this.rentedResult = rentedResult;
+            this.written = written;
+        }
+
+        public ReadOnlySpan<char> Span => this.rentedResult.AsSpan(0, this.written);
+
+        public void Dispose()
+        {
+            ValueStringBuilder.ReturnRentedBuffer(this.rentedResult);
+        }
     }
 }

@@ -33,7 +33,8 @@ public static class TemplateParameterProvider
     /// <param name="allowReserved">A value indicating whether to allow reserved symbols.</param>
     public static void Encode(ref ValueStringBuilder output, ReadOnlySpan<char> value, bool allowReserved)
     {
-        for (int i = 0; i < value.Length; ++i)
+        int length = value.Length;
+        for (int i = 0; i < length; ++i)
         {
             char c = value[i];
             if ((c >= 'A' && c <= 'z') ////                                     Alpha
@@ -70,7 +71,7 @@ public static class TemplateParameterProvider
                 output.Append(HexDigits[aByte & 15]);
             }
 #else
-            byte[] bytes = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(1));
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(4);
             char[] source = ArrayPool<char>.Shared.Rent(1);
 
             try

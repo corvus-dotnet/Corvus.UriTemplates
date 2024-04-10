@@ -63,7 +63,7 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
     /// <returns><see langword="true"/> if the URI matched the template, and the parameters were resolved successfully.</returns>
     public static bool TryResolveResult<TState>(TParameterProvider parameterProvider, ReadOnlySpan<char> template, bool resolvePartially, in TParameterPayload parameters, ResolvedUriTemplateCallback<TState> callback, ParameterNameCallback<TState>? parameterNameCallback, ref TState state)
     {
-        ValueStringBuilder builder = default;
+        ValueStringBuilder builder = new(template.Length * 4);
 
         try
         {

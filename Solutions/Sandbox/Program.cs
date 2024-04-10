@@ -13,18 +13,22 @@
 ////await uriTemplateTableMatching.GlobalCleanup();
 
 using Corvus.UriTemplates.Benchmarking;
+using Microsoft.CodeAnalysis.Operations;
 
 UriTemplateParameterSetting uriTemplateParameterSetting = new();
 
 await uriTemplateParameterSetting.GlobalSetup();
 
-await Task.Delay(10000);
-
 Console.WriteLine("Start now");
 
 await Task.Delay(3000);
 
-uriTemplateParameterSetting.ResolveUriCorvusTavis();
+for(int i = 0; i < 10000; ++i)
+{
+    uriTemplateParameterSetting.ResolveUriCorvusJson();
+}
+
+Console.WriteLine("Stop now");
 
 await Task.Delay(10000);
 

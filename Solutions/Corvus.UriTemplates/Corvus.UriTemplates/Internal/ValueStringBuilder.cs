@@ -46,6 +46,18 @@ namespace Corvus.UriTemplates
 
         public int Capacity => _chars.Length;
 
+        /// <summary>
+        /// Returns the buffer retrieved from <see cref="RentedChars"/>.
+        /// </summary>
+        /// <param name="buffer">The buffer to return.</param>
+        public static void ReturnRentedBuffer(char[]? buffer)
+        {
+            if (buffer is char[] b)
+            {
+                ArrayPool<char>.Shared.Return(b);
+            }
+        }
+
         public void EnsureCapacity(int capacity)
         {
             // This is not expected to be called this with negative capacity
@@ -99,6 +111,11 @@ namespace Corvus.UriTemplates
 
         /// <summary>Returns the underlying storage of the builder.</summary>
         public Span<char> RawChars => _chars;
+
+        /// <summary>
+        /// Return the underlying rented buffer, if any.
+        /// </summary>
+        public char[]? RentedChars => _arrayToReturnToPool;
 
         /// <summary>
         /// Returns a span around the contents of the builder.

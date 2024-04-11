@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using Corvus.UriTemplates;
 
 namespace Corvus.UriTemplates;
 
@@ -125,9 +126,8 @@ internal static class JsonElementExtensions
             Span<byte> sourceUnescaped = length <= JsonConstants.StackallocThreshold ?
             stackalloc byte[JsonConstants.StackallocThreshold] :
             (sourceArray = ArrayPool<byte>.Shared.Rent(length));
-            JsonReaderHelper.Unescape(rawInput, sourceUnescaped, 0, out int written);
+            JsonReaderHelper.Unescape(rawInput, sourceUnescaped, idx, out int written);
             sourceUnescaped = sourceUnescaped[..written];
-
             try
             {
                 return state.Parser(sourceUnescaped, state.State, out value);
@@ -159,7 +159,6 @@ internal static class JsonElementExtensions
 
             JsonReaderHelper.Unescape(rawInput, utf8Unescaped, idx, out int written);
             utf8Unescaped = utf8Unescaped[..written];
-
             try
             {
                 return ProcessDecodedText(utf8Unescaped, state, out result);
@@ -187,7 +186,6 @@ internal static class JsonElementExtensions
         (sourceTranscodedArray = ArrayPool<char>.Shared.Rent(length));
         int writtenTranscoded = JsonReaderHelper.TranscodeHelper(decodedUtf8String, sourceTranscoded);
         sourceTranscoded = sourceTranscoded[..writtenTranscoded];
-
         bool success = false;
         if (state.Parser(sourceTranscoded, state.State, out TResult? tmp))
         {
@@ -207,6 +205,16 @@ internal static class JsonElementExtensions
         return success;
     }
 
+#if NET8_0_OR_GREATER
+    /// <summary>
+    /// Wraps up the state for the UTF8 parser and the parser's native state into a compound state entity.
+    /// </summary>
+    private readonly record struct Utf8ParserStateWrapper<TState, TResult>(Utf8Parser<TState, TResult> Parser, in TState State, bool Decode);
+    /// <summary>
+    /// Wraps up the state for the parser and the parser's native state into a compound state entity.
+    /// </summary>
+    private readonly record struct ParserStateWrapper<TState, TResult>(Parser<TState, TResult> Parser, in TState State);
+#else
     /// <summary>
     /// Wraps up the state for the UTF8 parser and the parser's native state into a compound state entity.
     /// </summary>
@@ -241,4 +249,5 @@ internal static class JsonElementExtensions
 
         public TState State { get; }
     }
+#endif
 }

@@ -14,6 +14,15 @@ namespace Corvus.UriTemplates;
 public delegate void EnumerateParametersCallback<TState>(ReadOnlySpan<char> name, ReadOnlySpan<char> value, ref TState state);
 
 /// <summary>
+/// A callback for enumerating parameters from the cache.
+/// </summary>
+/// <typeparam name="TState">The type of the state for the callback.</typeparam>
+/// <param name="nameRange">The range in the URI template of the parameter name.</param>
+/// <param name="valueRange">The range in the input URI string at which the parameter was found.</param>
+/// <param name="state">The state for the callback.</param>
+public delegate void EnumerateParametersCallbackWithRange<TState>(Range nameRange, Range valueRange, ref TState state);
+
+/// <summary>
 /// Extension methods for <see cref="IUriTemplateParser"/>.
 /// </summary>
 public static class UriTemplateParserExtensions
@@ -48,5 +57,37 @@ public static class UriTemplateParserExtensions
     public static bool EnumerateParameters<TState>(this IUriTemplateParser parser, string uri, EnumerateParametersCallback<TState> callback, ref TState state, int initialCapacity = 10)
     {
         return ParameterCache.EnumerateParameters(parser, uri.AsSpan(), initialCapacity, callback, ref state);
+    }
+
+    /// <summary>
+    /// Enumerate the parameters in the parser.
+    /// </summary>
+    /// <typeparam name="TState">The type of the state for the callback.</typeparam>
+    /// <param name="parser">The parser to use.</param>
+    /// <param name="uri">The uri to parse.</param>
+    /// <param name="callback">The callback to receive the enumerated parameters.</param>
+    /// <param name="state">The state for the callback.</param>
+    /// <param name="initialCapacity">The initial cache size, which should be greater than or equal to the expected number of parameters.
+    /// It also provides the increment for the cache size should it be exceeded.</param>
+    /// <returns><see langword="true"/> if the parser was successful, otherwise <see langword="false"/>.</returns>
+    public static bool EnumerateParameters<TState>(this IUriTemplateParser parser, ReadOnlySpan<char> uri, EnumerateParametersCallbackWithRange<TState> callback, ref TState state, int initialCapacity = 10)
+    {
+        return ParameterByRangeCache.EnumerateParameters(parser, uri, initialCapacity, callback, ref state);
+    }
+
+    /// <summary>
+    /// Enumerate the parameters in the parser.
+    /// </summary>
+    /// <typeparam name="TState">The type of the state for the callback.</typeparam>
+    /// <param name="parser">The parser to use.</param>
+    /// <param name="uri">The uri to parse.</param>
+    /// <param name="callback">The callback to receive the enumerated parameters.</param>
+    /// <param name="state">The state for the callback.</param>
+    /// <param name="initialCapacity">The initial cache size, which should be greater than or equal to the expected number of parameters.
+    /// It also provides the increment for the cache size should it be exceeded.</param>
+    /// <returns><see langword="true"/> if the parser was successful, otherwise <see langword="false"/>.</returns>
+    public static bool EnumerateParameters<TState>(this IUriTemplateParser parser, string uri, EnumerateParametersCallbackWithRange<TState> callback, ref TState state, int initialCapacity = 10)
+    {
+        return ParameterByRangeCache.EnumerateParameters(parser, uri.AsSpan(), initialCapacity, callback, ref state);
     }
 }

@@ -1,35 +1,19 @@
-﻿////using Corvus.UriTemplates.Benchmarking;
-
-////UriTemplateTableMatching uriTemplateTableMatching = new();
-
-////await uriTemplateTableMatching.GlobalSetup();
-
-////await Task.Delay(10000);
-
-////uriTemplateTableMatching.MatchCorvus();
-
-////await Task.Delay(10000);
-
-////await uriTemplateTableMatching.GlobalCleanup();
-
+﻿using Corvus.UriTemplates;
 using Corvus.UriTemplates.Benchmarking;
-using Microsoft.CodeAnalysis.Operations;
 
-UriTemplateParameterSetting uriTemplateParameterSetting = new();
 
-await uriTemplateParameterSetting.GlobalSetup();
+IUriTemplateParser template = UriTemplateParserFactory.CreateParser(
+    "{scheme}://{host}/");
+template.IsMatch("http://example.com/");
 
-Console.WriteLine("Start now");
+UriTemplateTableMatching uriTemplateTableMatching = new();
 
-await Task.Delay(3000);
+await uriTemplateTableMatching.GlobalSetup();
 
-for(int i = 0; i < 10000; ++i)
-{
-    uriTemplateParameterSetting.ResolveUriCorvusJson();
-}
+await Task.Delay(2000);
 
-Console.WriteLine("Stop now");
+uriTemplateTableMatching.MatchCorvus();
 
-await Task.Delay(10000);
+await Task.Delay(1000);
 
-await uriTemplateParameterSetting.GlobalCleanup();
+await uriTemplateTableMatching.GlobalCleanup();

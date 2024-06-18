@@ -43,6 +43,13 @@ namespace UriTemplateTests
             {
                 Assert.Equal(key, match.Result);
             }
+
+#if !NET8_0_OR_GREATER
+            if (table.TryMatch(url, verb, out match))
+            {
+                Assert.Equal(key, match.Result);
+            }
+#endif
         }
 
         [Theory,

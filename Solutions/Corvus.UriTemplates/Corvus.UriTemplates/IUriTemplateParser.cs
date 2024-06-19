@@ -2,6 +2,8 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Corvus.UriTemplates;
 
 /// <summary>
@@ -22,33 +24,13 @@ public delegate void ParameterCallback<TState>(bool reset, ReadOnlySpan<char> na
 /// <param name="nameHandle">Identifies the parameter name.</param>
 /// <param name="valueRange">The range in the input URI string at which the parameter was found.</param>
 /// <param name="state">The state to pass.</param>
-public delegate void ParameterCallbackWithRange<TState>(bool reset, ParameterNameHandle nameHandle, Range valueRange, ref TState state);
+public delegate void ParameterCallbackWithRange<TState>(bool reset, ParameterName nameHandle, Range valueRange, ref TState state);
 
 /// <summary>
 /// The interface implemented by an URI parser.
 /// </summary>
 public interface IUriTemplateParser
 {
-    // NEXT TIME 2024/06/18: implement this and all its consequences.
-
-    /// <summary>
-    /// Provides access to a <see cref="ReadOnlySpan{Char}"/> containing a parameter's name.
-    /// </summary>
-    /// <typeparam name="TState">Callback input type.</typeparam>
-    /// <typeparam name="TResult">Callback result type.</typeparam>
-    /// <param name="parameterNameHandle">Handle identifying the parameter.</param>
-    /// <param name="process">The method that will receive the span.</param>
-    /// <param name="state">An argument providing whatever state the callback requires.</param>
-    /// <returns>The return value of the callback.</returns>
-    /// <remarks>
-    /// This enables us to avoid allocating individual strings for parameter names, while
-    /// still allowing the application to discover parameter names dynamically if required.
-    /// </remarks>
-    TResult ProcessParameterName<TState, TResult>(
-        ParameterNameHandle parameterNameHandle,
-        ReadOnlySpanCallback<char, TState, TResult> process,
-        TState state);
-
     /// <summary>
     /// Determines if the UriTemplate matches the given URI.
     /// </summary>
@@ -165,21 +147,46 @@ public interface IUriTemplateParser
 }
 
 /// <summary>
-/// An opaque handle identifying a parameter name.
+/// Provides access to a parameter name.
 /// </summary>
-public readonly struct ParameterNameHandle
+public readonly struct ParameterName : IEquatable<ParameterName>
 {
+    private readonly string escapedUriTemplate;
+    private readonly Range range;
+
     /// <summary>
-    /// Creates a <see cref="ParameterNameHandle"/>.
+    /// Creates a <see cref="ParameterName"/>.
     /// </summary>
-    /// <param name="index">Parameter position.</param>
-    internal ParameterNameHandle(int index)
+    /// <param name="escapedUriTemplate">The escaped URI template containing the parameter name.</param>
+    /// <param name="range">Range in the escaped URI template containing the parameter name.</param>
+    internal ParameterName(string escapedUriTemplate, Range range)
     {
-        this.Index = index;
+        this.escapedUriTemplate = escapedUriTemplate;
+        this.range = range;
     }
 
     /// <summary>
-    /// Gets the position of this parameter.
+    /// Gets the parameter name.
     /// </summary>
-    internal int Index { get; }
+    public ReadOnlySpan<char> Span => this.escapedUriTemplate.AsSpan()[this.range];
+
+#pragma warning disable IDE0024, CS1591 // Overzealous documentation warnings.
+    public static bool operator ==(ParameterName left, ParameterName right) => left.Equals(right);
+
+    public static bool operator !=(ParameterName left, ParameterName right) => !left.Equals(right);
+#pragma warning restore IDE0024, CS1591
+
+    /// <inheritdoc/>
+    public bool Equals(ParameterName other) => this.escapedUriTemplate == other.escapedUriTemplate && this.range.Equals(other.range);
+
+    /// <inheritdoc/>
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is ParameterName other && this.Equals(other);
+
+    /// <inheritdoc/>
+    public override int GetHashCode() =>
+#if NET8_0_OR_GREATER
+        string.GetHashCode(this.Span);
+#else
+        this.Span.ToString().GetHashCode();
+#endif
 }

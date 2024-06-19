@@ -56,28 +56,27 @@ namespace UriTemplateTests
 
             Assert.Equal(3, state);
 
-            void Callback(Range nameRange, Range valueRange, ref int count)
+            void Callback(ParameterName name, Range valueRange, ref int count)
             {
-                ReadOnlySpan<char> name = template.AsSpan()[nameRange];
                 ReadOnlySpan<char> value = uri.AsSpan()[valueRange];
-                if (name.SequenceEqual("parentRequestId".AsSpan()))
+                if (name.Span.SequenceEqual("parentRequestId".AsSpan()))
                 {
                     Assert.True(value.SequenceEqual("123232323".AsSpan()), $"parentRequestId was {value.ToString()}");
                     count++;
                 }
-                else if (name.SequenceEqual("hash".AsSpan()))
+                else if (name.Span.SequenceEqual("hash".AsSpan()))
                 {
                     Assert.True(value.SequenceEqual("23ADE34FAE".AsSpan()), $"hash was {value.ToString()}");
                     count++;
                 }
-                else if (name.SequenceEqual("callback".AsSpan()))
+                else if (name.Span.SequenceEqual("callback".AsSpan()))
                 {
                     Assert.True(value.SequenceEqual("http%3A%2F%2Fexample.com%2Fcallback".AsSpan()), $"callback was {value.ToString()}");
                     count++;
                 }
                 else
                 {
-                    Assert.Fail($"Unexpected parameter: (name: '{name.ToString()}', value: '{value.ToString()}')");
+                    Assert.Fail($"Unexpected parameter: (name: '{name.Span.ToString()}', value: '{value.ToString()}')");
                 }
             }
         }
@@ -128,28 +127,27 @@ namespace UriTemplateTests
 
             Assert.Equal(3, state);
 
-            void Callback(Range nameRange, Range valueRange, ref int count)
+            void Callback(ParameterName name, Range valueRange, ref int count)
             {
-                ReadOnlySpan<char> name = template.AsSpan()[nameRange];
                 ReadOnlySpan<char> value = uri.AsSpan()[valueRange];
-                if (name.SequenceEqual("parentRequestId".AsSpan()))
+                if (name.Span.SequenceEqual("parentRequestId".AsSpan()))
                 {
                     Assert.True(value.SequenceEqual("123232323".AsSpan()), $"parentRequestId was {value.ToString()}");
                     count++;
                 }
-                else if (name.SequenceEqual("hash".AsSpan()))
+                else if (name.Span.SequenceEqual("hash".AsSpan()))
                 {
                     Assert.True(value.SequenceEqual("23ADE34FAE".AsSpan()), $"hash was {value.ToString()}");
                     count++;
                 }
-                else if (name.SequenceEqual("callback".AsSpan()))
+                else if (name.Span.SequenceEqual("callback".AsSpan()))
                 {
                     Assert.True(value.SequenceEqual("http%3A%2F%2Fexample.com%2Fcallback".AsSpan()), $"callback was {value.ToString()}");
                     count++;
                 }
                 else
                 {
-                    Assert.Fail($"Unexpected parameter: (name: '{name.ToString()}', value: '{value.ToString()}')");
+                    Assert.Fail($"Unexpected parameter: (name: '{name.Span.ToString()}', value: '{value.ToString()}')");
                 }
             }
         }

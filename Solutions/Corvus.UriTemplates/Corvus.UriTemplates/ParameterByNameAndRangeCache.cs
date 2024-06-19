@@ -1,4 +1,4 @@
-﻿// <copyright file="ParameterByRangeCache.cs" company="Endjin Limited">
+﻿// <copyright file="ParameterByNameAndRangeCache.cs" company="Endjin Limited">
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
@@ -10,14 +10,14 @@ namespace Corvus.UriTemplates;
 /// <summary>
 /// A cache for parameters extracted from a URI template.
 /// </summary>
-internal struct ParameterByRangeCache
+internal struct ParameterByNameAndRangeCache
 {
     private readonly int bufferIncrement;
     private CacheEntry[] items;
     private int written;
     private bool rented = false;
 
-    private ParameterByRangeCache(int initialCapacity)
+    private ParameterByNameAndRangeCache(int initialCapacity)
     {
         this.bufferIncrement = initialCapacity;
         this.items = ArrayPool<CacheEntry>.Shared.Rent(initialCapacity);
@@ -38,7 +38,7 @@ internal struct ParameterByRangeCache
     /// <returns><see langword="true"/> if the parser was successful, otherwise <see langword="false"/>.</returns>
     public static bool EnumerateParameters<TState>(IUriTemplateParser parser, ReadOnlySpan<char> uri, int initialCapacity, EnumerateParametersCallbackWithRange<TState> callback, ref TState state)
     {
-        ParameterByRangeCache cache = Rent(initialCapacity);
+        ParameterByNameAndRangeCache cache = Rent(initialCapacity);
         try
         {
             if (parser.ParseUri(uri, HandleParameters, ref cache))
@@ -61,7 +61,7 @@ internal struct ParameterByRangeCache
     /// <param name="initialCapacity">The initial capacity of the cache.</param>
     /// <returns>An instance of a parameter cache.</returns>
     /// <remarks>When you have finished with the cache, call <see cref="Return()"/> to relinquish any internal resources.</remarks>
-    internal static ParameterByRangeCache Rent(int initialCapacity)
+    internal static ParameterByNameAndRangeCache Rent(int initialCapacity)
     {
         return new(initialCapacity);
     }
@@ -92,7 +92,7 @@ internal struct ParameterByRangeCache
         for (int i = 0; i < this.written; ++i)
         {
             ref CacheEntry item = ref this.items[i];
-            if (uriTemplate[item.NameRange].Equals(name, StringComparison.Ordinal))
+            if (item.Name.Span.Equals(name, StringComparison.Ordinal))
             {
                 range = item.ValueRange;
                 return true;
@@ -122,7 +122,7 @@ internal struct ParameterByRangeCache
         for (int i = 0; i < this.written; ++i)
         {
             ref CacheEntry item = ref this.items[i];
-            callback(item.NameRange, item.ValueRange, ref state);
+            callback(item.Name, item.ValueRange, ref state);
         }
     }
 
@@ -142,15 +142,15 @@ internal struct ParameterByRangeCache
     /// A parameter handler for <see cref="IUriTemplateParser"/>.
     /// </summary>
     /// <param name="reset">Indicates whether to reset the parameter cache, ignoring any parameters that have been seen.</param>
-    /// <param name="nameRange">The range of the parameter name.</param>
-    /// <param name="range">The range of the parameter.</param>
+    /// <param name="name">The name of the parameter.</param>
+    /// <param name="range">The range of the parameter value in the URI being matches to the URI template.</param>
     /// <param name="state">The parameter cache.</param>
     /// <remarks>Pass this to <see cref="IUriTemplateParser.ParseUri{TState}(in ReadOnlySpan{char}, ParameterCallback{TState}, ref TState, in bool)"/>, as the callback.</remarks>
-    private static void HandleParameters(bool reset, Range nameRange, Range range, ref ParameterByRangeCache state)
+    private static void HandleParameters(bool reset, ParameterName name, Range range, ref ParameterByNameAndRangeCache state)
     {
         if (!reset)
         {
-            state.Add(nameRange, range);
+            state.Add(name, range);
         }
         else
         {
@@ -161,22 +161,22 @@ internal struct ParameterByRangeCache
     /// <summary>
     /// Add a parameter to the cache.
     /// </summary>
-    /// <param name="nameRange">The range of the name of the parameter to add.</param>
-    /// <param name="range">The range of the parameter to add.</param>
-    private void Add(Range nameRange, Range range)
+    /// <param name="name">The name of the parameter to add.</param>
+    /// <param name="range">The range of the parameter value in the URI being matches to the URI template.</param>
+    private void Add(ParameterName name, Range range)
     {
         if (this.written == this.items.Length)
         {
             ArrayPool<CacheEntry>.Shared.Resize(ref this.items, this.items.Length + this.bufferIncrement);
         }
 
-        this.items[this.written] = new(nameRange, range);
+        this.items[this.written] = new(name, range);
         this.written++;
     }
 
-    private readonly struct CacheEntry(Range nameRange, Range valueRange)
+    private readonly struct CacheEntry(ParameterName name, Range valueRange)
     {
-        public Range NameRange => nameRange;
+        public ParameterName Name => name;
 
         public Range ValueRange => valueRange;
     }

@@ -17,10 +17,10 @@ public delegate void EnumerateParametersCallback<TState>(ReadOnlySpan<char> name
 /// A callback for enumerating parameters from the cache.
 /// </summary>
 /// <typeparam name="TState">The type of the state for the callback.</typeparam>
-/// <param name="nameRange">The range in the URI template of the parameter name.</param>
+/// <param name="name">The parameter name.</param>
 /// <param name="valueRange">The range in the input URI string at which the parameter was found.</param>
 /// <param name="state">The state for the callback.</param>
-public delegate void EnumerateParametersCallbackWithRange<TState>(Range nameRange, Range valueRange, ref TState state);
+public delegate void EnumerateParametersCallbackWithRange<TState>(ParameterName name, Range valueRange, ref TState state);
 
 /// <summary>
 /// Extension methods for <see cref="IUriTemplateParser"/>.
@@ -72,7 +72,7 @@ public static class UriTemplateParserExtensions
     /// <returns><see langword="true"/> if the parser was successful, otherwise <see langword="false"/>.</returns>
     public static bool EnumerateParameters<TState>(this IUriTemplateParser parser, ReadOnlySpan<char> uri, EnumerateParametersCallbackWithRange<TState> callback, ref TState state, int initialCapacity = 10)
     {
-        return ParameterByRangeCache.EnumerateParameters(parser, uri, initialCapacity, callback, ref state);
+        return ParameterByNameAndRangeCache.EnumerateParameters(parser, uri, initialCapacity, callback, ref state);
     }
 
     /// <summary>
@@ -88,6 +88,6 @@ public static class UriTemplateParserExtensions
     /// <returns><see langword="true"/> if the parser was successful, otherwise <see langword="false"/>.</returns>
     public static bool EnumerateParameters<TState>(this IUriTemplateParser parser, string uri, EnumerateParametersCallbackWithRange<TState> callback, ref TState state, int initialCapacity = 10)
     {
-        return ParameterByRangeCache.EnumerateParameters(parser, uri.AsSpan(), initialCapacity, callback, ref state);
+        return ParameterByNameAndRangeCache.EnumerateParameters(parser, uri.AsSpan(), initialCapacity, callback, ref state);
     }
 }

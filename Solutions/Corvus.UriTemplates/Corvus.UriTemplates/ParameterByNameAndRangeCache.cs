@@ -3,6 +3,8 @@
 // </copyright>
 
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
+
 using CommunityToolkit.HighPerformance;
 
 namespace Corvus.UriTemplates;
@@ -13,14 +15,14 @@ namespace Corvus.UriTemplates;
 internal struct ParameterByNameAndRangeCache
 {
     private readonly int bufferIncrement;
-    private CacheEntry[] items;
+    private ParameterValue[] items;
     private int written;
     private bool rented = false;
 
     private ParameterByNameAndRangeCache(int initialCapacity)
     {
         this.bufferIncrement = initialCapacity;
-        this.items = ArrayPool<CacheEntry>.Shared.Rent(initialCapacity);
+        this.items = ArrayPool<ParameterValue>.Shared.Rent(initialCapacity);
         this.written = 0;
         this.rented = true;
     }
@@ -36,7 +38,7 @@ internal struct ParameterByNameAndRangeCache
     /// <param name="callback">The callback to receive the enumerated parameters.</param>
     /// <param name="state">The state for the callback.</param>
     /// <returns><see langword="true"/> if the parser was successful, otherwise <see langword="false"/>.</returns>
-    public static bool EnumerateParameters<TState>(IUriTemplateParser parser, ReadOnlySpan<char> uri, int initialCapacity, EnumerateParametersCallbackWithRange<TState> callback, ref TState state)
+    internal static bool EnumerateParameters<TState>(IUriTemplateParser parser, ReadOnlySpan<char> uri, int initialCapacity, EnumerateParametersCallbackWithRange<TState> callback, ref TState state)
     {
         ParameterByNameAndRangeCache cache = Rent(initialCapacity);
         try
@@ -56,6 +58,40 @@ internal struct ParameterByNameAndRangeCache
     }
 
     /// <summary>
+    /// Gets the parameters from the URI template.
+    /// </summary>
+    /// <param name="parser">The parser to use.</param>
+    /// <param name="uri">The uri to parse.</param>
+    /// <param name="initialCapacity">The initial cache size, which should be greater than or equal to the expected number of parameters.
+    /// It also provides the increment for the cache size should it be exceeded.</param>
+    /// <param name="templateParameters">A <see cref="UriTemplateParameters"/>.</param>
+    /// <returns><see langword="true"/> if parsing succeeded.</returns>
+    internal static bool TryGetUriTemplateParameters(
+        IUriTemplateParser parser,
+        ReadOnlySpan<char> uri,
+        int initialCapacity,
+        [NotNullWhen(true)] out UriTemplateParameters? templateParameters)
+    {
+        ParameterByNameAndRangeCache cache = Rent(initialCapacity);
+
+        try
+        {
+            if (parser.ParseUri(uri, HandleParameters, ref cache))
+            {
+                templateParameters = cache.Detach();
+                return true;
+            }
+
+            templateParameters = null;
+            return false;
+        }
+        finally
+        {
+            cache.Return();
+        }
+    }
+
+    /// <summary>
     /// Rent an instance of a parameter cache.
     /// </summary>
     /// <param name="initialCapacity">The initial capacity of the cache.</param>
@@ -64,6 +100,16 @@ internal struct ParameterByNameAndRangeCache
     internal static ParameterByNameAndRangeCache Rent(int initialCapacity)
     {
         return new(initialCapacity);
+    }
+
+    /// <summary>
+    /// Frees a <see cref="ParameterValue"/> array either as part of normal usage, or
+    /// when it was returned by <see cref="Detach"/> and the new owner is done with it.
+    /// </summary>
+    /// <param name="items">The rented array to return.</param>
+    internal static void Return(ParameterValue[] items)
+    {
+        ArrayPool<ParameterValue>.Shared.Return(items);
     }
 
     /// <summary>
@@ -91,7 +137,7 @@ internal struct ParameterByNameAndRangeCache
     {
         for (int i = 0; i < this.written; ++i)
         {
-            ref CacheEntry item = ref this.items[i];
+            ref ParameterValue item = ref this.items[i];
             if (item.Name.Span.Equals(name, StringComparison.Ordinal))
             {
                 range = item.ValueRange;
@@ -121,7 +167,7 @@ internal struct ParameterByNameAndRangeCache
     {
         for (int i = 0; i < this.written; ++i)
         {
-            ref CacheEntry item = ref this.items[i];
+            ref ParameterValue item = ref this.items[i];
             callback(item.Name, item.ValueRange, ref state);
         }
     }
@@ -133,7 +179,7 @@ internal struct ParameterByNameAndRangeCache
     {
         if (this.rented)
         {
-            ArrayPool<CacheEntry>.Shared.Return(this.items);
+            Return(this.items);
             this.rented = false;
         }
     }
@@ -159,6 +205,19 @@ internal struct ParameterByNameAndRangeCache
     }
 
     /// <summary>
+    /// Hands the ownership of the <see cref="ParameterValue"/> array over to a newly-created
+    /// <see cref="UriTemplateParameters"/>.
+    /// </summary>
+    /// <returns>
+    /// The <see cref="UriTemplateParameters"/> that now owns the cached data.
+    /// </returns>
+    private UriTemplateParameters Detach()
+    {
+        this.rented = false;
+        return new UriTemplateParameters(this.items);
+    }
+
+    /// <summary>
     /// Add a parameter to the cache.
     /// </summary>
     /// <param name="name">The name of the parameter to add.</param>
@@ -167,17 +226,10 @@ internal struct ParameterByNameAndRangeCache
     {
         if (this.written == this.items.Length)
         {
-            ArrayPool<CacheEntry>.Shared.Resize(ref this.items, this.items.Length + this.bufferIncrement);
+            ArrayPool<ParameterValue>.Shared.Resize(ref this.items, this.items.Length + this.bufferIncrement);
         }
 
         this.items[this.written] = new(name, range);
         this.written++;
-    }
-
-    private readonly struct CacheEntry(ParameterName name, Range valueRange)
-    {
-        public ParameterName Name => name;
-
-        public Range ValueRange => valueRange;
     }
 }

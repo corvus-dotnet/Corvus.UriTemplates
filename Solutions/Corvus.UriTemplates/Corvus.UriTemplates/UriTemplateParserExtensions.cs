@@ -2,6 +2,8 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Corvus.UriTemplates;
 
 /// <summary>
@@ -89,5 +91,23 @@ public static class UriTemplateParserExtensions
     public static bool EnumerateParameters<TState>(this IUriTemplateParser parser, string uri, EnumerateParametersCallbackWithRange<TState> callback, ref TState state, int initialCapacity = 10)
     {
         return ParameterByNameAndRangeCache.EnumerateParameters(parser, uri.AsSpan(), initialCapacity, callback, ref state);
+    }
+
+    /// <summary>
+    /// Gets the parameters from the URI template.
+    /// </summary>
+    /// <param name="parser">The parser to use.</param>
+    /// <param name="uri">The uri to parse.</param>
+    /// <param name="initialCapacity">The initial cache size, which should be greater than or equal to the expected number of parameters.
+    /// It also provides the increment for the cache size should it be exceeded.</param>
+    /// <param name="templateParameters">A <see cref="UriTemplateParameters"/>.</param>
+    /// <returns><see langword="true"/> if parsing succeeded.</returns>
+    public static bool TryGetUriTemplateParameters(
+        IUriTemplateParser parser,
+        ReadOnlySpan<char> uri,
+        int initialCapacity,
+        [NotNullWhen(true)] out UriTemplateParameters? templateParameters)
+    {
+        return ParameterByNameAndRangeCache.TryGetUriTemplateParameters(parser, uri, initialCapacity, out templateParameters);
     }
 }

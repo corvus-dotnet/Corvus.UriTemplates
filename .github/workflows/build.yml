@@ -52,7 +52,7 @@ jobs:
 
   build:
     needs: prepareConfig
-    uses: ./.github/workflows/matrix-build-workflow.yml
+    uses: endjin/Endjin.RecommendedPractices.GitHubActions/.github/workflows/scripted-build-matrix-pipeline.yml@feature/add-matrix-build
     with:
       netSdkVersion: '8.0.x'
       # additionalNetSdkVersion: '7.0.x'
@@ -64,9 +64,23 @@ jobs:
       testPhaseEnv: ${{ needs.prepareConfig.outputs.RESOLVED_ENV_VARS }}
       packagePhaseEnv: ${{ needs.prepareConfig.outputs.RESOLVED_ENV_VARS }}
       publishPhaseEnv: ${{ needs.prepareConfig.outputs.RESOLVED_ENV_VARS }}
-      additionalCachePaths: |
-        uritemplate-test
+      
+      # Settings for the cross-os testing feature
       enableCrossOsCaching: true
+      compilePhaseRunnerOs: 'windows-latest'
+      # NOTE: The below is the default value so if this is correct then you could get rid of this line - otherwise keep it as a useful reference
+      testPhaseMatrixJson: |
+        {
+          "os": ["ubuntu-latest", "windows-latest"],
+          "dotnetFramework": ["net8.0", "net481"],
+          "exclude": [
+            {
+              "os": "ubuntu-latest",
+              "dotnetFramework": "net481"
+            }
+          ]
+        }
+      packagePhaseRunnerOs: 'windows-latest'
     secrets:
       compilePhaseAzureCredentials: ${{ secrets.AZURE_READER_CREDENTIALS }}
       # testPhaseAzureCredentials: ${{ secrets.TESTS_KV_READER_CREDENTIALS }}

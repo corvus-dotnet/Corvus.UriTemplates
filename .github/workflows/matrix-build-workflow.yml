@@ -140,14 +140,12 @@ jobs:
         else
           echo "available=false" >> $GITHUB_OUTPUT;
         fi
-    # IDG: temporary workaround for this build failure:
-    # https://github.com/corvus-dotnet/Corvus.UriTemplates/actions/runs/9644036694/job/26595285890#step:7:31
-    # - name: Azure CLI login
-    #   if: ${{ steps.compilePhaseAzureCredentials_secret_check.outputs.available == 'true' }}
-    #   uses: azure/login@8c334a195cbb38e46038007b304988d888bf676a    # v2.0.0
-    #   with:
-    #     creds: ${{ secrets.compilePhaseAzureCredentials }}
-    #     enable-AzPSSession: true
+    - name: Azure CLI login
+      if: ${{ steps.compilePhaseAzureCredentials_secret_check.outputs.available == 'true' }}
+      uses: azure/login@8c334a195cbb38e46038007b304988d888bf676a    # v2.0.0
+      with:
+        creds: ${{ secrets.compilePhaseAzureCredentials }}
+        enable-AzPSSession: true
     - uses: endjin/Endjin.RecommendedPractices.GitHubActions/actions/run-scripted-build@feature/multi-os-cache
       id: run_compile
       with:

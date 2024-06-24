@@ -57,7 +57,10 @@ jobs:
       netSdkVersion: '8.0.x'
       # additionalNetSdkVersion: '7.0.x'
       # workflow_dispatch inputs are always strings, the type property is just for the UI
-      forcePublish: ${{ github.event.inputs.forcePublish == 'true' }}
+      # IDG temporary override because the workflow_dispatch button isn't yet available (because the
+      # workflow is not yet merged into main)
+      forcePublish: true
+      #forcePublish: ${{ github.event.inputs.forcePublish == 'true' }}
       skipCleanup: ${{ github.event.inputs.skipCleanup == 'true' }}
       # testArtifactName: ''
       # testArtifactPath: ''
@@ -65,6 +68,8 @@ jobs:
       testPhaseEnv: ${{ needs.prepareConfig.outputs.RESOLVED_ENV_VARS }}
       packagePhaseEnv: ${{ needs.prepareConfig.outputs.RESOLVED_ENV_VARS }}
       publishPhaseEnv: ${{ needs.prepareConfig.outputs.RESOLVED_ENV_VARS }}
+      additionalCachePaths: |
+        uritemplate-test
       enableCrossOsCaching: true
     secrets:
       compilePhaseAzureCredentials: ${{ secrets.AZURE_READER_CREDENTIALS }}

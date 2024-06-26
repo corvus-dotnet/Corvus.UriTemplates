@@ -103,7 +103,7 @@ public static class UriTemplateParserExtensions
     /// <param name="templateParameters">A <see cref="UriTemplateParameters"/>.</param>
     /// <returns><see langword="true"/> if parsing succeeded.</returns>
     public static bool TryGetUriTemplateParameters(
-        IUriTemplateParser parser,
+        this IUriTemplateParser parser,
         ReadOnlySpan<char> uri,
         int initialCapacity,
         [NotNullWhen(true)] out UriTemplateParameters? templateParameters)

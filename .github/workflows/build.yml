@@ -56,7 +56,9 @@ jobs:
     with:
       netSdkVersion: '8.0.x'
       # additionalNetSdkVersion: '7.0.x'
-      forcePublish: ${{ github.event.inputs.forcePublish == 'true' }}
+      # IDG temporarily force because we won't get the button to press until this branch is merged to main
+      forcePublish: true
+      #forcePublish: ${{ github.event.inputs.forcePublish == 'true' }}
       skipCleanup: ${{ github.event.inputs.skipCleanup == 'true' }}
       # testArtifactName: ''
       # testArtifactPath: ''

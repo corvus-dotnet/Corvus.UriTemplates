@@ -39,6 +39,16 @@ public class UriTemplateParameters : IDisposable
     }
 
     /// <summary>
+    /// Tests whether a parameter with the specified name is present.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
+    /// <returns>True if the named parameter was found.</returns>
+    /// <exception cref="ObjectDisposedException">
+    /// Thrown if <see cref="Dispose"/> has already been called.
+    /// </exception>
+    public bool Has(ReadOnlySpan<char> name) => this.TryGet(name, out _);
+
+    /// <summary>
     /// Retrieves the value of a parameter.
     /// </summary>
     /// <param name="name">The parameter name.</param>
@@ -57,6 +67,14 @@ public class UriTemplateParameters : IDisposable
         for (int i = 0; i < this.items.Length; i++)
         {
             ref ParameterValue v = ref this.items[i];
+            if (v.Name.Span.IsEmpty)
+            {
+                // The array is rented, so it will typically be larger than it
+                // needs to be. If we hit an empty entry there's no point looking
+                // any further.
+                break;
+            }
+
             if (v.Name.Span.Equals(name, StringComparison.Ordinal))
             {
                 value = v;

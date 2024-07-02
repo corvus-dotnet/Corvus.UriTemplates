@@ -41,7 +41,11 @@ public sealed class MatchWithVerb<TMatch>
     {
         foreach (KeyValuePair<string, TMatch> kvp in this.verbsToMatches)
         {
+#if NET8_0_OR_GREATER
             if (verb.Equals(kvp.Key, StringComparison.Ordinal))
+#else
+            if (verb.Equals(kvp.Key.AsSpan(), StringComparison.Ordinal))
+#endif
             {
                 match = kvp.Value;
                 return true;

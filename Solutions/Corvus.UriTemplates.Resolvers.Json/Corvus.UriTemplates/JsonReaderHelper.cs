@@ -10,6 +10,8 @@
 using System;
 using System.Buffers;
 using System.Buffers.Text;
+using System.ComponentModel;
+using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -73,6 +75,34 @@ namespace Corvus.UriTemplates
             return propertyName;
         }
 
+#if !NET8_0_OR_GREATER
+        public static int GetUnescapedArrayInPlace(byte[] utf8Source, int length, int idx)
+        {
+            // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
+            byte[]? pooledName = null;
+
+            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (pooledName = ArrayPool<byte>.Shared.Rent(length));
+
+
+            try
+            {
+                Unescape(utf8Source.AsSpan(0, length), utf8Unescaped, idx, out int written);
+                utf8Unescaped[..written].CopyTo(utf8Source);
+
+                Debug.Assert(written > 0);
+                return written;
+            }
+            finally
+            {
+                if (pooledName is byte[] p)
+                {
+                    ArrayPool<byte>.Shared.Return(p);
+                }
+            }
+        }
+#endif
         internal static void Unescape(ReadOnlySpan<byte> source, Span<byte> destination, int idx, out int written)
         {
             Debug.Assert(idx >= 0 && idx < source.Length);
@@ -90,88 +120,92 @@ namespace Corvus.UriTemplates
                     idx++;
                     currentByte = source[idx];
 
-                    switch (currentByte)
+                    if (currentByte == JsonConstants.Quote)
                     {
-                        case (byte)'"':
-                            destination[written++] = JsonConstants.Quote;
-                            break;
-                        case (byte)'n':
-                            destination[written++] = JsonConstants.LineFeed;
-                            break;
-                        case (byte)'r':
-                            destination[written++] = JsonConstants.CarriageReturn;
-                            break;
-                        case JsonConstants.BackSlash:
-                            destination[written++] = JsonConstants.BackSlash;
-                            break;
-                        case JsonConstants.Slash:
-                            destination[written++] = JsonConstants.Slash;
-                            break;
-                        case (byte)'t':
-                            destination[written++] = JsonConstants.Tab;
-                            break;
-                        case (byte)'b':
-                            destination[written++] = JsonConstants.BackSpace;
-                            break;
-                        case (byte)'f':
-                            destination[written++] = JsonConstants.FormFeed;
-                            break;
-                        case (byte)'u':
+                        destination[written++] = JsonConstants.Quote;
+                    }
+                    else if (currentByte == 'n')
+                    {
+                        destination[written++] = JsonConstants.LineFeed;
+                    }
+                    else if (currentByte == 'r')
+                    {
+                        destination[written++] = JsonConstants.CarriageReturn;
+                    }
+                    else if (currentByte == JsonConstants.BackSlash)
+                    {
+                        destination[written++] = JsonConstants.BackSlash;
+                    }
+                    else if (currentByte == JsonConstants.Slash)
+                    {
+                        destination[written++] = JsonConstants.Slash;
+                    }
+                    else if (currentByte == 't')
+                    {
+                        destination[written++] = JsonConstants.Tab;
+                    }
+                    else if (currentByte == 'b')
+                    {
+                        destination[written++] = JsonConstants.BackSpace;
+                    }
+                    else if (currentByte == 'f')
+                    {
+                        destination[written++] = JsonConstants.FormFeed;
+                    }
+                    else if (currentByte == 'u')
+                    {
+                        // The source is known to be valid JSON, and hence if we see a \u, it is guaranteed to have 4 hex digits following it
+                        // Otherwise, the Utf8JsonReader would have already thrown an exception.
+                        Debug.Assert(source.Length >= idx + 5);
+
+                        bool result = Utf8Parser.TryParse(source.Slice(idx + 1, 4), out int scalar, out int bytesConsumed, 'x');
+                        Debug.Assert(result);
+                        Debug.Assert(bytesConsumed == 4);
+                        idx += bytesConsumed;     // The loop iteration will increment idx past the last hex digit
+
+                        if (JsonHelpers.IsInRangeInclusive((uint)scalar, JsonConstants.HighSurrogateStartValue, JsonConstants.LowSurrogateEndValue))
+                        {
+                            // The first hex value cannot be a low surrogate.
+                            if (scalar >= JsonConstants.LowSurrogateStartValue)
                             {
-                                // The source is known to be valid JSON, and hence if we see a \u, it is guaranteed to have 4 hex digits following it
-                                // Otherwise, the Utf8JsonReader would have alreayd thrown an exception.
-                                Debug.Assert(source.Length >= idx + 5);
-
-                                bool result = Utf8Parser.TryParse(source.Slice(idx + 1, 4), out int scalar, out int bytesConsumed, 'x');
-                                Debug.Assert(result);
-                                Debug.Assert(bytesConsumed == 4);
-                                idx += bytesConsumed;     // The loop iteration will increment idx past the last hex digit
-
-                                if (JsonHelpers.IsInRangeInclusive((uint)scalar, JsonConstants.HighSurrogateStartValue, JsonConstants.LowSurrogateEndValue))
-                                {
-                                    // The first hex value cannot be a low surrogate.
-                                    if (scalar >= JsonConstants.LowSurrogateStartValue)
-                                    {
-                                        throw new InvalidOperationException($"Read Invalid UTF16: {scalar}");
-                                    }
-
-                                    Debug.Assert(JsonHelpers.IsInRangeInclusive((uint)scalar, JsonConstants.HighSurrogateStartValue, JsonConstants.HighSurrogateEndValue));
-
-                                    idx += 3;   // Skip the last hex digit and the next \u
-
-                                    // We must have a low surrogate following a high surrogate.
-                                    if (source.Length < idx + 4 || source[idx - 2] != '\\' || source[idx - 1] != 'u')
-                                    {
-                                        throw new InvalidOperationException("Read Invalid UTF16");
-                                    }
-
-                                    // The source is known to be valid JSON, and hence if we see a \u, it is guaranteed to have 4 hex digits following it
-                                    // Otherwise, the Utf8JsonReader would have alreayd thrown an exception.
-                                    result = Utf8Parser.TryParse(source.Slice(idx, 4), out int lowSurrogate, out bytesConsumed, 'x');
-                                    Debug.Assert(result);
-                                    Debug.Assert(bytesConsumed == 4);
-
-                                    // If the first hex value is a high surrogate, the next one must be a low surrogate.
-                                    if (!JsonHelpers.IsInRangeInclusive((uint)lowSurrogate, JsonConstants.LowSurrogateStartValue, JsonConstants.LowSurrogateEndValue))
-                                    {
-                                        throw new InvalidOperationException($"Read Invalid UTF16: {lowSurrogate}");
-                                    }
-
-                                    idx += bytesConsumed - 1;  // The loop iteration will increment idx past the last hex digit
-
-                                    // To find the unicode scalar:
-                                    // (0x400 * (High surrogate - 0xD800)) + Low surrogate - 0xDC00 + 0x10000
-                                    scalar = (JsonConstants.BitShiftBy10 * (scalar - JsonConstants.HighSurrogateStartValue))
-                                        + (lowSurrogate - JsonConstants.LowSurrogateStartValue)
-                                        + JsonConstants.UnicodePlane01StartValue;
-                                }
-
-                                var rune = new Rune(scalar);
-                                int bytesWritten = rune.EncodeToUtf8(destination.Slice(written));
-                                Debug.Assert(bytesWritten <= 4);
-                                written += bytesWritten;
-                                break;
+                                throw new InvalidOperationException($"Read Invalid UTF16: {scalar}");
                             }
+
+                            Debug.Assert(JsonHelpers.IsInRangeInclusive((uint)scalar, JsonConstants.HighSurrogateStartValue, JsonConstants.HighSurrogateEndValue));
+
+                            idx += 3;   // Skip the last hex digit and the next \u
+
+                            // We must have a low surrogate following a high surrogate.
+                            if (source.Length < idx + 4 || source[idx - 2] != '\\' || source[idx - 1] != 'u')
+                            {
+                                throw new InvalidOperationException("Read Invalid UTF16");
+                            }
+
+                            // The source is known to be valid JSON, and hence if we see a \u, it is guaranteed to have 4 hex digits following it
+                            // Otherwise, the Utf8JsonReader would have already thrown an exception.
+                            result = Utf8Parser.TryParse(source.Slice(idx, 4), out int lowSurrogate, out bytesConsumed, 'x');
+                            Debug.Assert(result);
+                            Debug.Assert(bytesConsumed == 4);
+
+                            // If the first hex value is a high surrogate, the next one must be a low surrogate.
+                            if (!JsonHelpers.IsInRangeInclusive((uint)lowSurrogate, JsonConstants.LowSurrogateStartValue, JsonConstants.LowSurrogateEndValue))
+                            {
+                                throw new InvalidOperationException($"Read Invalid UTF16: {lowSurrogate}");
+                            }
+
+                            idx += bytesConsumed - 1;  // The loop iteration will increment idx past the last hex digit
+
+                            // To find the unicode scalar:
+                            // (0x400 * (High surrogate - 0xD800)) + Low surrogate - 0xDC00 + 0x10000
+                            scalar = (JsonConstants.BitShiftBy10 * (scalar - JsonConstants.HighSurrogateStartValue))
+                                + (lowSurrogate - JsonConstants.LowSurrogateStartValue)
+                                + JsonConstants.UnicodePlane01StartValue;
+                        }
+
+                        var rune = new Rune(scalar);
+                        int bytesWritten = rune.EncodeToUtf8(destination.Slice(written));
+                        Debug.Assert(bytesWritten <= 4);
+                        written += bytesWritten;
                     }
                 }
                 else
@@ -185,7 +219,26 @@ namespace Corvus.UriTemplates
         {
             try
             {
+#if NET8_0_OR_GREATER
                 return s_utf8Encoding.GetChars(utf8Unescaped, destination);
+#else
+                char[] chars = ArrayPool<char>.Shared.Rent(destination.Length);
+                byte[] bytes = ArrayPool<byte>.Shared.Rent(utf8Unescaped.Length);
+
+                utf8Unescaped.CopyTo(bytes);
+
+                try
+                {
+                    int written = s_utf8Encoding.GetChars(bytes, 0, utf8Unescaped.Length, chars, 0);
+                    chars.AsSpan(0, written).CopyTo(destination);
+                    return written;
+                }
+                finally
+                {
+                    ArrayPool<char>.Shared.Return(chars);
+                    ArrayPool<byte>.Shared.Return(bytes);
+                }
+#endif
             }
             catch (DecoderFallbackException dfe)
             {

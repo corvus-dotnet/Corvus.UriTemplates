@@ -2,6 +2,7 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
+using System;
 using System.Buffers;
 using System.Text;
 using CommunityToolkit.HighPerformance;
@@ -60,31 +61,49 @@ public ref struct VariableSpecification
     /// Copy the result to the output span.
     /// </summary>
     /// <param name="output">The span to which to copy the result.</param>
-    public void CopyTo(IBufferWriter<char> output)
+    public void CopyTo(ref ValueStringBuilder output)
     {
         if (this.First)
         {
             if (this.OperatorInfo.First != '\0')
             {
-                output.Write(this.OperatorInfo.First);
+                output.Append(this.OperatorInfo.First);
             }
         }
 
-        output.Write(this.VarName);
+        output.Append(this.VarName);
 
         if (this.Explode)
         {
-            output.Write('*');
+            output.Append('*');
         }
 
         if (this.PrefixLength > 0)
         {
-            output.Write(':');
+            output.Append(':');
 
-            Span<char> buffer = output.GetSpan(128);
+            int digits = this.PrefixLength == 0 ? 1 : (int)Math.Floor(Math.Log10(this.PrefixLength)) + 1;
+
+            Span<char> buffer = output.AppendSpan(digits);
+
+#if NET8_0_OR_GREATER
             this.PrefixLength.TryFormat(buffer, out int charsWritten);
-            output.Advance(charsWritten);
+#else
+            TryFormat(this.PrefixLength, buffer, digits);
+#endif
         }
+
+#if !NET8_0_OR_GREATER
+        static void TryFormat(int value, Span<char> span, int digits)
+        {
+            while (digits > 0)
+            {
+                digits--;
+                span[digits] = (char)((value % 10) + '0');
+                value /= 10;
+            }
+        }
+#endif
     }
 
     /// <summary>
@@ -99,7 +118,14 @@ public ref struct VariableSpecification
             builder.Append(this.OperatorInfo.First);
         }
 
+#if NET8_0_OR_GREATER
         builder.Append(this.VarName);
+#else
+        foreach (char c in this.VarName)
+        {
+            builder.Append(c);
+        }
+#endif
         if (this.Explode)
         {
             builder.Append('*');

@@ -64,19 +64,21 @@ internal struct ParameterByNameAndRangeCache
     /// <param name="uri">The uri to parse.</param>
     /// <param name="initialCapacity">The initial cache size, which should be greater than or equal to the expected number of parameters.
     /// It also provides the increment for the cache size should it be exceeded.</param>
+    /// <param name="requiresRootedMatch">If true, then the template requires a rooted match and will not ignore prefixes. This is more efficient when using a fully-qualified template.</param>
     /// <param name="templateParameters">A <see cref="UriTemplateParameters"/>.</param>
     /// <returns><see langword="true"/> if parsing succeeded.</returns>
     internal static bool TryGetUriTemplateParameters(
         IUriTemplateParser parser,
         ReadOnlySpan<char> uri,
         int initialCapacity,
+        bool requiresRootedMatch,
         [NotNullWhen(true)] out UriTemplateParameters? templateParameters)
     {
         ParameterByNameAndRangeCache cache = Rent(initialCapacity);
 
         try
         {
-            if (parser.ParseUri(uri, HandleParameters, ref cache))
+            if (parser.ParseUri(uri, HandleParameters, ref cache, requiresRootedMatch))
             {
                 templateParameters = cache.Detach();
                 return true;
@@ -191,7 +193,7 @@ internal struct ParameterByNameAndRangeCache
     /// <param name="name">The name of the parameter.</param>
     /// <param name="range">The range of the parameter value in the URI being matches to the URI template.</param>
     /// <param name="state">The parameter cache.</param>
-    /// <remarks>Pass this to <see cref="IUriTemplateParser.ParseUri{TState}(in ReadOnlySpan{char}, ParameterCallback{TState}, ref TState, in bool)"/>, as the callback.</remarks>
+    /// <remarks>Pass this to <see cref="IUriTemplateParser.ParseUri{TState}(in ReadOnlySpan{char}, ParameterCallback{TState}, ref TState, bool)"/>, as the callback.</remarks>
     private static void HandleParameters(bool reset, ParameterName name, Range range, ref ParameterByNameAndRangeCache state)
     {
         if (!reset)

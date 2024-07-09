@@ -108,6 +108,28 @@ public static class UriTemplateParserExtensions
         int initialCapacity,
         [NotNullWhen(true)] out UriTemplateParameters? templateParameters)
     {
-        return ParameterByNameAndRangeCache.TryGetUriTemplateParameters(parser, uri, initialCapacity, out templateParameters);
+        return ParameterByNameAndRangeCache.TryGetUriTemplateParameters(
+            parser, uri, initialCapacity, false, out templateParameters);
+    }
+
+    /// <summary>
+    /// Gets the parameters from the URI template.
+    /// </summary>
+    /// <param name="parser">The parser to use.</param>
+    /// <param name="uri">The uri to parse.</param>
+    /// <param name="initialCapacity">The initial cache size, which should be greater than or equal to the expected number of parameters.
+    /// It also provides the increment for the cache size should it be exceeded.</param>
+    /// <param name="requiresRootedMatch">If true, then the template requires a rooted match and will not ignore prefixes. This is more efficient when using a fully-qualified template.</param>
+    /// <param name="templateParameters">A <see cref="UriTemplateParameters"/>.</param>
+    /// <returns><see langword="true"/> if parsing succeeded.</returns>
+    public static bool TryGetUriTemplateParameters(
+        this IUriTemplateParser parser,
+        ReadOnlySpan<char> uri,
+        int initialCapacity,
+        bool requiresRootedMatch,
+        [NotNullWhen(true)] out UriTemplateParameters? templateParameters)
+    {
+        return ParameterByNameAndRangeCache.TryGetUriTemplateParameters(
+            parser, uri, initialCapacity, requiresRootedMatch, out templateParameters);
     }
 }

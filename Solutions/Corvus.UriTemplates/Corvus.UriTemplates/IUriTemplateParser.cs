@@ -58,7 +58,7 @@ public interface IUriTemplateParser
     /// those parameters are invalid, and should be disregarded.
     /// </para>
     /// </remarks>
-    bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state, in bool requiresRootedMatch = false);
+    bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallback<TState> parameterCallback, ref TState state, bool requiresRootedMatch = false);
 
     /// <summary>
     /// Parses the given URI, calling your parameter callback for each named parameter discovered.
@@ -87,10 +87,10 @@ public interface IUriTemplateParser
     /// This exception will be thrown if that is the case.
     /// </exception>
 #if NET8_0_OR_GREATER
-    virtual bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallbackWithRange<TState> parameterCallback, ref TState state, in bool requiresRootedMatch = false) =>
+    virtual bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallbackWithRange<TState> parameterCallback, ref TState state, bool requiresRootedMatch = false) =>
         throw new NotImplementedException();
 #else
-    bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallbackWithRange<TState> parameterCallback, ref TState state, in bool requiresRootedMatch = false);
+    bool ParseUri<TState>(in ReadOnlySpan<char> uri, ParameterCallbackWithRange<TState> parameterCallback, ref TState state, bool requiresRootedMatch = false);
 #endif
 
 #if !NET8_0_OR_GREATER
@@ -121,7 +121,7 @@ public interface IUriTemplateParser
     /// those parameters are invalid, and should be disregarded.
     /// </para>
     /// </remarks>
-    bool ParseUri<TState>(string uri, ParameterCallback<TState> parameterCallback, ref TState state, in bool requiresRootedMatch = false);
+    bool ParseUri<TState>(string uri, ParameterCallback<TState> parameterCallback, ref TState state, bool requiresRootedMatch = false);
 
     /// <summary>
     /// Parses the given URI, calling your parameter callback for each named parameter discovered.
@@ -142,7 +142,7 @@ public interface IUriTemplateParser
     /// those parameters are invalid, and should be disregarded.
     /// </para>
     /// </remarks>
-    bool ParseUri<TState>(string uri, ParameterCallbackWithRange<TState> parameterCallback, ref TState state, in bool requiresRootedMatch = false);
+    bool ParseUri<TState>(string uri, ParameterCallbackWithRange<TState> parameterCallback, ref TState state, bool requiresRootedMatch = false);
 #endif
 }
 

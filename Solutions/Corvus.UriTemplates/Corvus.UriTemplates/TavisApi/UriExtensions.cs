@@ -6,8 +6,6 @@
 // </licensing>
 
 using System.Buffers;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
 
 namespace Corvus.UriTemplates.TavisApi;
 

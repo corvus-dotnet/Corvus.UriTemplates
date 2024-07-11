@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 
 #nullable enable
 
-namespace Corvus.UriTemplates
+namespace Corvus.UriTemplates.Internal
 {
     public ref partial struct ValueStringBuilder
     {
@@ -173,7 +173,7 @@ namespace Corvus.UriTemplates
 
             int count = s.Length;
 
-            if (_pos > (_chars.Length - count))
+            if (_pos > _chars.Length - count)
             {
                 Grow(count);
             }

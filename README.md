@@ -185,7 +185,7 @@ You can then make use of that parser to extract parameter values from a URI.
 
 The parser uses a callback model to deliver the parameters to you (to avoid allocations). If you are used to low allocation code, you will probably recognize the pattern.
 
-You call `EnumerateParmaeters()`, passing the URI you wish to parse (as a `ReadOnlySpan<char>`), a callback, and the initial value of a state object, which will be passed to that callback.
+You call `EnumerateParameters()`, passing the URI you wish to parse (as a `ReadOnlySpan<char>`), a callback, and the initial value of a state object, which will be passed to that callback.
 
 The callback itself is called by the parser each time a matched parameter is discovered.
 

@@ -6,13 +6,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // </licensing>
 
-using System.Buffers;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text.Encodings.Web;
-
 #pragma warning disable
 
 // Contains a polyfill implementation of System.Text.Rune that works on netstandard2.0.
@@ -21,7 +14,7 @@ using System.Text.Encodings.Web;
 
 namespace Corvus.UriTemplates;
 
-public readonly struct Rune
+internal readonly struct Rune
 {
     private const int MaxUtf16CharsPerRune = 2; // supplementary plane code points are encoded as 2 UTF-16 code units
 

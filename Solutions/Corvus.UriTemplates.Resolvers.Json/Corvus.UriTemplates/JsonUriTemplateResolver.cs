@@ -2,9 +2,10 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+
+using Corvus.UriTemplates.Internal;
 
 namespace Corvus.UriTemplates;
 

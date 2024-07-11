@@ -5,7 +5,6 @@
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using Corvus.UriTemplates;
 
 namespace Corvus.UriTemplates;
 

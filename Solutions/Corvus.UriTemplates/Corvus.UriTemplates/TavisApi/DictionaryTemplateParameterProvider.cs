@@ -2,10 +2,12 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-using System.Buffers;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+
 using CommunityToolkit.HighPerformance;
+
+using Corvus.UriTemplates.Internal;
 using Corvus.UriTemplates.TemplateParameterProviders;
 
 namespace Corvus.UriTemplates.TavisApi;

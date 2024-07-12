@@ -2,9 +2,10 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+
+using Corvus.UriTemplates.Internal;
 
 namespace Corvus.UriTemplates;
 
@@ -58,10 +59,10 @@ public static class JsonUriTemplateResolver
     /// <param name="parameters">The parameters to apply to the template.</param>
     /// <returns><see langword="true"/> if the URI matched the template, and the parameters were resolved successfully.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryResolveResult(ReadOnlySpan<char> template, IBufferWriter<char> output, bool resolvePartially, in JsonElement parameters)
+    public static bool TryResolveResult(ReadOnlySpan<char> template, ref ValueStringBuilder output, bool resolvePartially, in JsonElement parameters)
     {
         object? nullState = default;
-        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(ParameterProvider, template, output, resolvePartially, parameters, null, ref nullState);
+        return UriTemplateResolver<JsonTemplateParameterProvider, JsonElement>.TryResolveResult(ParameterProvider, template, ref output, resolvePartially, parameters, null, ref nullState);
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
-﻿using Corvus.UriTemplates;
+﻿using System;
+using Corvus.UriTemplates;
 using Xunit;
 
 
@@ -24,7 +25,7 @@ namespace UriTemplateTests
             builder.Add("/{goo}/{bar}/blob", "goo");
             var table = builder.ToTable();
 
-            if (table.TryMatch(url, out TemplateMatchResult<string> match))
+            if (table.TryMatch(url.AsSpan(), out TemplateMatchResult<string> match))
             {
                 Assert.Equal(key, match.Result);
             }
@@ -47,7 +48,7 @@ namespace UriTemplateTests
             builder.Add("/games/{gametitle}/{gameid}/State/{stateid}", "state");
             var table = builder.ToTable();
 
-            if (table.TryMatch(url, out TemplateMatchResult<string> match))
+            if (table.TryMatch(url.AsSpan(), out TemplateMatchResult<string> match))
             {
                 Assert.Equal(key, match.Result);
             }
@@ -72,7 +73,7 @@ InlineData("/foo", "fooxy"),
 
             var table = builder.ToTable();
 
-            if (table.TryMatch(url, out TemplateMatchResult<string> match))
+            if (table.TryMatch(url.AsSpan(), out TemplateMatchResult<string> match))
             {
                 Assert.Equal(key, match.Result);
             }
@@ -90,7 +91,7 @@ InlineData("/foo", "fooxy"),
 
             var table = builder.ToTable();
 
-            if (table.TryMatch("/foo?x=a,b,c,d", out TemplateMatchResult<string> match))
+            if (table.TryMatch("/foo?x=a,b,c,d".AsSpan(), out TemplateMatchResult<string> match))
             {
                 Assert.Equal("fooxy2", match.Result);
             }

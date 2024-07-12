@@ -2,11 +2,8 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-using System.Buffers;
-using CommunityToolkit.HighPerformance;
-using CommunityToolkit.HighPerformance.Buffers;
+using Corvus.UriTemplates.Internal;
 using Corvus.UriTemplates.TemplateParameterProviders;
-using Microsoft.Extensions.ObjectPool;
 
 namespace Corvus.UriTemplates;
 
@@ -34,9 +31,6 @@ public delegate void ResolvedUriTemplateCallback<TState>(ReadOnlySpan<char> reso
 public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
     where TParameterProvider : ITemplateParameterProvider<TParameterPayload>
 {
-    private static readonly ObjectPool<ArrayPoolBufferWriter<char>> ArrayPoolWriterPool =
-     new DefaultObjectPoolProvider().Create<ArrayPoolBufferWriter<char>>();
-
     private static readonly OperatorInfo OpInfoZero = new(@default: true, first: '\0', separator: ',', named: false, ifEmpty: string.Empty, allowReserved: false);
     private static readonly OperatorInfo OpInfoPlus = new(@default: false, first: '\0', separator: ',', named: false, ifEmpty: string.Empty, allowReserved: true);
     private static readonly OperatorInfo OpInfoDot = new(@default: false, first: '.', separator: '.', named: false, ifEmpty: string.Empty, allowReserved: false);
@@ -66,12 +60,13 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
     /// <returns><see langword="true"/> if the URI matched the template, and the parameters were resolved successfully.</returns>
     public static bool TryResolveResult<TState>(TParameterProvider parameterProvider, ReadOnlySpan<char> template, bool resolvePartially, in TParameterPayload parameters, ResolvedUriTemplateCallback<TState> callback, ParameterNameCallback<TState>? parameterNameCallback, ref TState state)
     {
-        ArrayPoolBufferWriter<char> abw = ArrayPoolWriterPool.Get();
+        ValueStringBuilder builder = new(template.Length * 4);
+
         try
         {
-            if (TryResolveResult(parameterProvider, template, abw, resolvePartially, parameters, parameterNameCallback, ref state))
+            if (TryResolveResult(parameterProvider, template, ref builder, resolvePartially, parameters, parameterNameCallback, ref state))
             {
-                callback(abw.WrittenSpan, ref state);
+                callback(builder.AsSpan(), ref state);
                 return true;
             }
 
@@ -79,8 +74,7 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
         }
         finally
         {
-            abw.Clear();
-            ArrayPoolWriterPool.Return(abw);
+            builder.Dispose();
         }
     }
 
@@ -96,7 +90,7 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
     /// <param name="parameterNameCallback">An optional callback which is provided each parameter name as they are discovered.</param>
     /// <param name="state">The callback state.</param>
     /// <returns><see langword="true"/> if the URI matched the template, and the parameters were resolved successfully.</returns>
-    public static bool TryResolveResult<TState>(TParameterProvider parameterProvider, ReadOnlySpan<char> template, IBufferWriter<char> output, bool resolvePartially, in TParameterPayload parameters, ParameterNameCallback<TState>? parameterNameCallback, ref TState state)
+    public static bool TryResolveResult<TState>(TParameterProvider parameterProvider, ReadOnlySpan<char> template, ref ValueStringBuilder output, bool resolvePartially, in TParameterPayload parameters, ParameterNameCallback<TState>? parameterNameCallback, ref TState state)
     {
         States currentState = States.CopyingLiterals;
         int expressionStart = -1;
@@ -112,7 +106,7 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
                     {
                         if (expressionStart != -1)
                         {
-                            output.Write(template[expressionStart..expressionEnd]);
+                            output.Append(template[expressionStart..expressionEnd]);
                         }
 
                         currentState = States.ParsingExpression;
@@ -139,7 +133,7 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
 
                     if (character == '}')
                     {
-                        if (!ProcessExpression(parameterProvider, template[expressionStart..expressionEnd], output, resolvePartially, parameters, parameterNameCallback, ref state))
+                        if (!ProcessExpression(parameterProvider, template[expressionStart..expressionEnd], ref output, resolvePartially, parameters, parameterNameCallback, ref state))
                         {
                             return false;
                         }
@@ -166,7 +160,7 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
 
         if (expressionStart != -1)
         {
-            output.Write(template[expressionStart..expressionEnd]);
+            output.Append(template[expressionStart..expressionEnd]);
         }
 
         return true;
@@ -196,7 +190,7 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
                 || c == '.';
     }
 
-    private static bool ProcessExpression<TState>(TParameterProvider parameterProvider, ReadOnlySpan<char> currentExpression, IBufferWriter<char> output, bool resolvePartially, in TParameterPayload parameters, ParameterNameCallback<TState>? parameterNameCallback, ref TState state)
+    private static bool ProcessExpression<TState>(TParameterProvider parameterProvider, ReadOnlySpan<char> currentExpression, ref ValueStringBuilder output, bool resolvePartially, in TParameterPayload parameters, ParameterNameCallback<TState>? parameterNameCallback, ref TState state)
     {
         if (currentExpression.Length == 0)
         {
@@ -247,7 +241,11 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
                         return false;
                     }
 
+#if NET8_0_OR_GREATER
                     varSpec.PrefixLength = int.Parse(currentExpression[prefixStart..i]);
+#else
+                    varSpec.PrefixLength = ParseInt(currentExpression[prefixStart..i]);
+#endif
                     i--;
                     break;
 
@@ -255,7 +253,7 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
                     varSpec.VarName = currentExpression[varNameStart..varNameEnd];
                     multivariableExpression = true;
 
-                    success = ProcessVariable(parameterProvider, ref varSpec, output, multivariableExpression, resolvePartially, parameters, parameterNameCallback, ref state);
+                    success = ProcessVariable(parameterProvider, ref varSpec, ref output, multivariableExpression, resolvePartially, parameters, parameterNameCallback, ref state);
                     bool isFirst = varSpec.First;
 
                     // Reset for new variable
@@ -293,19 +291,32 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
             varSpec.VarName = currentExpression[varNameStart..varNameEnd];
         }
 
-        VariableProcessingState outerSuccess = ProcessVariable(parameterProvider, ref varSpec, output, multivariableExpression, resolvePartially, parameters, parameterNameCallback, ref state);
+        VariableProcessingState outerSuccess = ProcessVariable(parameterProvider, ref varSpec, ref output, multivariableExpression, resolvePartially, parameters, parameterNameCallback, ref state);
 
         return outerSuccess != VariableProcessingState.Failure;
+
+#if !NET8_0_OR_GREATER
+        static int ParseInt(ReadOnlySpan<char> span)
+        {
+            int result = 0;
+            foreach (char c in span)
+            {
+                result = (result * 10) + (c - '0');
+            }
+
+            return result;
+        }
+#endif
     }
 
-    private static VariableProcessingState ProcessVariable<TState>(TParameterProvider parameterProvider, ref VariableSpecification varSpec, IBufferWriter<char> output, bool multiVariableExpression, bool resolvePartially, in TParameterPayload parameters, ParameterNameCallback<TState>? parameterNameCallback, ref TState state)
+    private static VariableProcessingState ProcessVariable<TState>(TParameterProvider parameterProvider, ref VariableSpecification varSpec, ref ValueStringBuilder output, bool multiVariableExpression, bool resolvePartially, in TParameterPayload parameters, ParameterNameCallback<TState>? parameterNameCallback, ref TState state)
     {
         if (parameterNameCallback is ParameterNameCallback<TState> callback)
         {
             callback(varSpec.VarName, ref state);
         }
 
-        VariableProcessingState result = parameterProvider.ProcessVariable(ref varSpec, parameters, output);
+        VariableProcessingState result = parameterProvider.ProcessVariable(ref varSpec, parameters, ref output);
 
         if (result == VariableProcessingState.NotProcessed)
         {
@@ -315,22 +326,22 @@ public static class UriTemplateResolver<TParameterProvider, TParameterPayload>
                 {
                     if (varSpec.First)
                     {
-                        output.Write("{");
+                        output.Append("{");
                     }
                     else
                     {
-                        output.Write("{&");
+                        output.Append("{&");
                     }
 
-                    varSpec.CopyTo(output);
+                    varSpec.CopyTo(ref output);
 
-                    output.Write('}');
+                    output.Append('}');
                 }
                 else
                 {
-                    output.Write('{');
-                    varSpec.CopyTo(output);
-                    output.Write('}');
+                    output.Append('{');
+                    varSpec.CopyTo(ref output);
+                    output.Append('}');
                 }
             }
 

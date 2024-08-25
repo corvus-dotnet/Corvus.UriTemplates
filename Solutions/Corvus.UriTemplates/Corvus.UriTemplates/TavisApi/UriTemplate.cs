@@ -5,9 +5,6 @@
 // Derived from Tavis.UriTemplate https://github.com/tavis-software/Tavis.UriTemplates/blob/master/License.txt
 // </licensing>
 
-using System.Data.Common;
-using System.Runtime.CompilerServices;
-
 namespace Corvus.UriTemplates.TavisApi;
 
 /// <summary>

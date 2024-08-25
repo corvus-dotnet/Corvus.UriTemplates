@@ -1,4 +1,10 @@
-﻿using Corvus.UriTemplates.Benchmarking;
+﻿using Corvus.UriTemplates;
+using Corvus.UriTemplates.Benchmarking;
+
+
+IUriTemplateParser template = UriTemplateParserFactory.CreateParser(
+    "{scheme}://{host}/");
+template.IsMatch("http://example.com/");
 
 UriTemplateTableMatching uriTemplateTableMatching = new();
 

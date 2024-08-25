@@ -2,10 +2,12 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-using System.Buffers;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+
 using CommunityToolkit.HighPerformance;
+
+using Corvus.UriTemplates.Internal;
 using Corvus.UriTemplates.TemplateParameterProviders;
 
 namespace Corvus.UriTemplates.TavisApi;
@@ -25,7 +27,7 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
     ///     <see cref="VariableProcessingState.Success"/> if the variable was successfully processed,
     ///     <see cref="VariableProcessingState.NotProcessed"/> if the parameter was not present, or
     ///     <see cref="VariableProcessingState.Failure"/> if the parmeter could not be processed because it was incompatible with the variable specification in the template.</returns>
-    public VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in IDictionary<string, object?> parameters, IBufferWriter<char> output)
+    public VariableProcessingState ProcessVariable(ref VariableSpecification variableSpecification, in IDictionary<string, object?> parameters, ref ValueStringBuilder output)
     {
         string varName = variableSpecification.VarName.ToString();
         if (!parameters.ContainsKey(varName)
@@ -40,12 +42,12 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
         {
             if (variableSpecification.OperatorInfo.First != '\0')
             {
-                output.Write(variableSpecification.OperatorInfo.First);
+                output.Append(variableSpecification.OperatorInfo.First);
             }
         }
         else
         {
-            output.Write(variableSpecification.OperatorInfo.Separator);
+            output.Append(variableSpecification.OperatorInfo.Separator);
         }
 
         object? value = parameters[varName];
@@ -54,10 +56,10 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
         {
             if (variableSpecification.OperatorInfo.Named && !variableSpecification.Explode) //// exploding will prefix with list name
             {
-                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, list.Count == 0);
+                AppendName(ref output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, list.Count == 0);
             }
 
-            AppendArray(output, variableSpecification.OperatorInfo, variableSpecification.Explode, variableSpecification.VarName, list);
+            AppendArray(ref output, variableSpecification.OperatorInfo, variableSpecification.Explode, variableSpecification.VarName, list);
         }
         else if (TryGetDictionary(value, out IDictionary<string, string>? dictionary))
         {
@@ -68,20 +70,20 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
 
             if (variableSpecification.OperatorInfo.Named && !variableSpecification.Explode) //// exploding will prefix with list name
             {
-                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, dictionary.Count == 0);
+                AppendName(ref output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, dictionary.Count == 0);
             }
 
-            AppendObject(output, variableSpecification.OperatorInfo, variableSpecification.Explode, dictionary);
+            AppendObject(ref output, variableSpecification.OperatorInfo, variableSpecification.Explode, dictionary);
         }
         else if (value is string stringValue)
         {
             if (variableSpecification.OperatorInfo.Named)
             {
-                AppendNameAndStringValue(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, stringValue, variableSpecification.PrefixLength, variableSpecification.OperatorInfo.AllowReserved);
+                AppendNameAndStringValue(ref output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, stringValue, variableSpecification.PrefixLength, variableSpecification.OperatorInfo.AllowReserved);
             }
             else
             {
-                AppendValue(output, stringValue, variableSpecification.PrefixLength, variableSpecification.OperatorInfo.AllowReserved);
+                AppendValue(ref output, stringValue, variableSpecification.PrefixLength, variableSpecification.OperatorInfo.AllowReserved);
             }
         }
         else
@@ -90,10 +92,10 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
             string? fallbackStringValue = value?.ToString();
             if (variableSpecification.OperatorInfo.Named)
             {
-                AppendName(output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, string.IsNullOrEmpty(fallbackStringValue));
+                AppendName(ref output, variableSpecification.VarName, variableSpecification.OperatorInfo.IfEmpty, string.IsNullOrEmpty(fallbackStringValue));
             }
 
-            AppendValue(output, fallbackStringValue, variableSpecification.PrefixLength, variableSpecification.OperatorInfo.AllowReserved);
+            AppendValue(ref output, fallbackStringValue, variableSpecification.PrefixLength, variableSpecification.OperatorInfo.AllowReserved);
         }
 
         return VariableProcessingState.Success;
@@ -131,14 +133,14 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
     /// <param name="explode">Whether to explode the array.</param>
     /// <param name="variable">The variable name.</param>
     /// <param name="array">The array to add.</param>
-    private static void AppendArray(IBufferWriter<char> output, in OperatorInfo op, bool explode, ReadOnlySpan<char> variable, in IList array)
+    private static void AppendArray(ref ValueStringBuilder output, in OperatorInfo op, bool explode, ReadOnlySpan<char> variable, in IList array)
     {
         bool isFirst = true;
         foreach (object item in array)
         {
             if (!isFirst)
             {
-                output.Write(explode ? op.Separator : ',');
+                output.Append(explode ? op.Separator : ',');
             }
             else
             {
@@ -147,11 +149,11 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
 
             if (op.Named && explode)
             {
-                output.Write(variable);
-                output.Write('=');
+                output.Append(variable);
+                output.Append('=');
             }
 
-            AppendValue(output, item.ToString(), 0, op.AllowReserved);
+            AppendValue(ref output, item.ToString(), 0, op.AllowReserved);
         }
     }
 
@@ -162,7 +164,7 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
     /// <param name="op">The operator info.</param>
     /// <param name="explode">Whether to explode the object.</param>
     /// <param name="instance">The object instance to append.</param>
-    private static void AppendObject(IBufferWriter<char> output, in OperatorInfo op, bool explode, in IDictionary<string, string> instance)
+    private static void AppendObject(ref ValueStringBuilder output, in OperatorInfo op, bool explode, in IDictionary<string, string> instance)
     {
         bool isFirst = true;
         foreach (KeyValuePair<string, string> value in instance)
@@ -171,11 +173,11 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
             {
                 if (explode)
                 {
-                    output.Write(op.Separator);
+                    output.Append(op.Separator);
                 }
                 else
                 {
-                    output.Write(',');
+                    output.Append(',');
                 }
             }
             else
@@ -183,18 +185,18 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
                 isFirst = false;
             }
 
-            WriteEncodedPropertyName(value.Key.AsSpan(), output, op.AllowReserved, out bool decoded);
+            WriteEncodedPropertyName(value.Key.AsSpan(), ref output, op.AllowReserved, out bool decoded);
 
             if (explode)
             {
-                output.Write('=');
+                output.Append('=');
             }
             else
             {
-                output.Write(',');
+                output.Append(',');
             }
 
-            AppendValue(output, value.Value, 0, op.AllowReserved);
+            AppendValue(ref output, value.Value, 0, op.AllowReserved);
         }
     }
 
@@ -206,9 +208,9 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
     /// <param name="allowReserved">A value indicating whether to allow reserved characters.</param>
     /// <param name="result">Whether the value was written successfully.</param>
     /// <returns><see langword="true"/> if the value was written successfully.</returns>
-    private static bool WriteEncodedPropertyName(ReadOnlySpan<char> name, IBufferWriter<char> output, bool allowReserved, out bool result)
+    private static bool WriteEncodedPropertyName(ReadOnlySpan<char> name, ref ValueStringBuilder output, bool allowReserved, out bool result)
     {
-        TemplateParameterProvider.Encode(output, name, allowReserved);
+        TemplateParameterProvider.Encode(ref output, name, allowReserved);
         result = true;
         return true;
     }
@@ -220,17 +222,17 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
     /// <param name="variable">The variable name.</param>
     /// <param name="ifEmpty">The string to apply if the value is empty.</param>
     /// <param name="valueIsEmpty">True if the value is empty.</param>
-    private static void AppendName(IBufferWriter<char> output, ReadOnlySpan<char> variable, string ifEmpty, bool valueIsEmpty)
+    private static void AppendName(ref ValueStringBuilder output, ReadOnlySpan<char> variable, string ifEmpty, bool valueIsEmpty)
     {
-        output.Write(variable);
+        output.Append(variable);
 
         if (valueIsEmpty)
         {
-            output.Write(ifEmpty);
+           output.Append(ifEmpty);
         }
         else
         {
-            output.Write('=');
+            output.Append('=');
         }
     }
 
@@ -243,23 +245,23 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
     /// <param name="value">The value to append.</param>
     /// <param name="prefixLength">The prefix length.</param>
     /// <param name="allowReserved">Whether to allow reserved characters.</param>
-    private static void AppendNameAndStringValue(IBufferWriter<char> output, ReadOnlySpan<char> variable, string ifEmpty, string? value, int prefixLength, bool allowReserved)
+    private static void AppendNameAndStringValue(ref ValueStringBuilder output, ReadOnlySpan<char> variable, string ifEmpty, string? value, int prefixLength, bool allowReserved)
     {
-        output.Write(variable);
+        output.Append(variable);
 
         ReadOnlySpan<char> span = value.AsSpan();
 
         // Write the name separator
         if (span.Length == 0)
         {
-            output.Write(ifEmpty);
+           output.Append(ifEmpty);
         }
         else
         {
-            output.Write('=');
+            output.Append('=');
         }
 
-        WriteStringValue(output, span, prefixLength, allowReserved);
+        WriteStringValue(ref output, span, prefixLength, allowReserved);
     }
 
     /// <summary>
@@ -269,12 +271,12 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
     /// <param name="value">The value to append.</param>
     /// <param name="prefixLength">The prefix length.</param>
     /// <param name="allowReserved">Whether to allow reserved characters.</param>
-    private static void AppendValue(IBufferWriter<char> output, string? value, int prefixLength, bool allowReserved)
+    private static void AppendValue(ref ValueStringBuilder output, string? value, int prefixLength, bool allowReserved)
     {
-        WriteStringValue(output, value.AsSpan(), prefixLength, allowReserved);
+        WriteStringValue(ref output, value.AsSpan(), prefixLength, allowReserved);
     }
 
-    private static void WriteStringValue(IBufferWriter<char> output, ReadOnlySpan<char> span, int prefixLength, bool allowReserved)
+    private static void WriteStringValue(ref ValueStringBuilder output, ReadOnlySpan<char> span, int prefixLength, bool allowReserved)
     {
         // Write the value
         ReadOnlySpan<char> valueString = span;
@@ -287,6 +289,6 @@ internal class DictionaryTemplateParameterProvider : ITemplateParameterProvider<
             }
         }
 
-        TemplateParameterProvider.Encode(output, valueString, allowReserved);
+        TemplateParameterProvider.Encode(ref output, valueString, allowReserved);
     }
 }

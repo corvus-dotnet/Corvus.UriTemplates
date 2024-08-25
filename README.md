@@ -177,15 +177,20 @@ private static readonly IUriTemplateParser CorvusTemplate = CreateParser();
 private static IUriTemplateParser CreateParser()
 {
     return
-        UriTemplateParserFactory.CreateParser(UriTemplate)
+        UriTemplateParserFactory.CreateParser(UriTemplate);
 }
 ```
 
-You can then make use of that parser to extract parameter values from a URI.
+You can then make use of that parser to extract parameter values from a URI. `IUriTemplateParser` offers two mechanisms for this.
 
-The parser uses a callback model to deliver the parameters to you (to avoid allocations). If you are used to low allocation code, you will probably recognize the pattern.
+#### Callbacks
 
-You call `EnumerateParmaeters()`, passing the URI you wish to parse (as a `ReadOnlySpan<char>`), a callback, and the initial value of a state object, which will be passed to that callback.
+The parser offers a callback model to deliver the parameters to you (to avoid allocations). If you are used to low allocation code, you will probably recognize the pattern.
+
+
+
+
+You call `EnumerateParameters()`, passing the URI you wish to parse (as a `ReadOnlySpan<char>`), a callback, and the initial value of a state object, which will be passed to that callback.
 
 The callback itself is called by the parser each time a matched parameter is discovered.
 
@@ -205,6 +210,36 @@ static void HandleParameters(ReadOnlySpan<char> name, ReadOnlySpan<char> value, 
 ```
 
 > There is a defaulted optional parameter to this method that lets you specific an initial capacity for the cache; if you know how many parameters you are going to match, you can tune this to minimize the amount of re-allocation required.
+
+#### Cacheable
+
+To enable applications to separate the code that parses a URI from the code that uses the results (e.g., because parsing is done early on to choose between code paths), we offer an alternative model in which the parser returns all of the results of the parsing in an object you can retain:
+
+```cs
+public static UriTemplateParameters? GetParameters()
+{
+    if (CorvusTemplate.TryGetUriTemplateParameters(Uri, 3, out UriTemplateParameters? p))
+    {
+        return p;
+    }
+
+    return null;
+}
+```
+
+The `UriTemplateParameters` object returned can then later be used to retrieve parameter values, e.g.:
+
+```cs
+Console.WriteLine($"hash is {(parameters.Has("hash") ? "present" : "absent")}");
+
+if (parameters.TryGet("parentRequestId", out ParameterValue value))
+{
+    Console.WriteLine($"parentRequestId is {int.Parse(value.GetValue(Uri))}");
+}
+```
+
+Note that when you retrieve values from `UriTemplateParameters` you must pass a `ReadOnlySpan<char>` to `GetValue`, because `TryGetUriTemplateParameters` does not make a copy of the original URI. (This is to avoid an unnecessary allocation to hold the copy.)
+
 
 ### Resolving a template by substituting parameter values and producing a URI
 

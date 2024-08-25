@@ -2,7 +2,6 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Corvus.UriTemplates;
@@ -26,6 +25,29 @@ public sealed class UriTemplateTable<TMatch>
     /// Gets the number of entries in the table.
     /// </summary>
     public int Length => this.parsers.Length;
+
+#if !NET8_0_OR_GREATER
+    /// <summary>
+    /// Try to match the uri against the URI templates in the table.
+    /// </summary>
+    /// <param name="uri">The URI to match.</param>
+    /// <param name="match">The matched result.</param>
+    /// <param name="requiresRootedMatch">If true, then the template requires a rooted match and will not ignore prefixes. This is more efficient when using a fully-qualified template.</param>
+    /// <returns><see langword="true"/> if the URI matched a value in the table.</returns>
+    /// <remarks>
+    /// <para>
+    /// This will find the first match in the table.
+    /// </para>
+    /// <para>
+    /// While the <paramref name="match"/> result is <see cref="IDisposable"/> you need only dispose it if the method returned <see langword="true"/>.
+    /// It is, however, safe to dispose in either case.
+    /// </para>
+    /// </remarks>
+    public bool TryMatch(string uri, [MaybeNullWhen(false)] out TemplateMatchResult<TMatch> match, in bool requiresRootedMatch = false)
+    {
+        return this.TryMatch(uri.AsSpan(), out match, requiresRootedMatch);
+    }
+#endif
 
     /// <summary>
     /// Try to match the uri against the URI templates in the table.

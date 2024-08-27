@@ -6,7 +6,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-using Corvus.UriTemplates.Internal;
+using Corvus.HighPerformance;
 
 namespace Corvus.UriTemplates.TemplateParameterProviders;
 

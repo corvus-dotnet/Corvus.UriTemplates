@@ -4,7 +4,7 @@
 
 using System.Runtime.CompilerServices;
 
-using Corvus.UriTemplates.Internal;
+using Corvus.HighPerformance;
 
 namespace Corvus.UriTemplates;
 

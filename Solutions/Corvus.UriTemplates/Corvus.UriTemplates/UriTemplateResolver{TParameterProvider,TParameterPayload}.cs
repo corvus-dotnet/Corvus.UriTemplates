@@ -2,7 +2,7 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-using Corvus.UriTemplates.Internal;
+using Corvus.HighPerformance;
 using Corvus.UriTemplates.TemplateParameterProviders;
 
 namespace Corvus.UriTemplates;

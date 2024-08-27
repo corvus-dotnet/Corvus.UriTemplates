@@ -4,6 +4,7 @@
 
 using System.Text;
 
+using Corvus.HighPerformance;
 using Corvus.UriTemplates.Internal;
 
 namespace Corvus.UriTemplates.TemplateParameterProviders;
@@ -110,6 +111,7 @@ public ref struct VariableSpecification
     /// <returns>The variable specification as a string.</returns>
     public override string ToString()
     {
+        // TODO: want to use ValueStringBuilder, but we don't yet support appending int
         StringBuilder builder = StringBuilderPool.Shared.Get();
         if (this.First)
         {

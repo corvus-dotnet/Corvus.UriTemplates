@@ -96,6 +96,16 @@
           "System.Threading.Tasks.Extensions": "4.5.4"
         }
       },
+      "Corvus.HighPerformance": {
+        "type": "Transitive",
+        "resolved": "0.2.0-initial-code.16",
+        "contentHash": "jvhwxe+1dqXeMLPYz+BhjIt6nzT/wbK5okr1qyX8BKOzdZTcvtiLIuydLi/hRasJpx8ttk69k0GTZxhIQmsc9A==",
+        "dependencies": {
+          "IndexRange": "1.0.3",
+          "System.Buffers": "4.5.1",
+          "System.Memory": "4.5.5"
+        }
+      },
       "Endjin.RecommendedPractices": {
         "type": "Transitive",
         "resolved": "2.1.7",
@@ -432,6 +442,7 @@
         "type": "Project",
         "dependencies": {
           "CommunityToolkit.HighPerformance": "[8.2.2, )",
+          "Corvus.HighPerformance": "[0.2.0-initial-code.16, )",
           "IndexRange": "[1.0.3, )",
           "Microsoft.Extensions.ObjectPool": "[8.0.0, )",
           "System.Buffers": "[4.5.1, )",
@@ -581,6 +592,15 @@
         "type": "Transitive",
         "resolved": "8.2.2",
         "contentHash": "+zIp8d3sbtYaRbM6hqDs4Ui/z34j7DcUmleruZlYLE4CVxXq+MO8XJyIs42vzeTYFX+k0Iq1dEbBUnQ4z/Gnrw=="
+      },
+      "Corvus.HighPerformance": {
+        "type": "Transitive",
+        "resolved": "0.2.0-initial-code.16",
+        "contentHash": "jvhwxe+1dqXeMLPYz+BhjIt6nzT/wbK5okr1qyX8BKOzdZTcvtiLIuydLi/hRasJpx8ttk69k0GTZxhIQmsc9A==",
+        "dependencies": {
+          "System.Buffers": "4.5.1",
+          "System.Memory": "4.5.5"
+        }
       },
       "Endjin.RecommendedPractices": {
         "type": "Transitive",
@@ -805,8 +825,8 @@
       },
       "System.Memory": {
         "type": "Transitive",
-        "resolved": "4.5.4",
-        "contentHash": "1MbJTHS1lZ4bS4FmsJjnuGJOu88ZzTT2rLvrhW7Ygic+pC0NWA+3hgAen0HRdsocuQXCkUTdFn9yHJJhsijDXw=="
+        "resolved": "4.5.5",
+        "contentHash": "XIWiDvKPXaTveaB7HVganDlOCRoj03l+jrwNvcge/t8vhGYKvqV+dMv6G4SAX2NoNmN0wZfVPTAlFwZcZvVOUw=="
       },
       "System.Reflection.Metadata": {
         "type": "Transitive",
@@ -863,6 +883,7 @@
         "type": "Project",
         "dependencies": {
           "CommunityToolkit.HighPerformance": "[8.2.2, )",
+          "Corvus.HighPerformance": "[0.2.0-initial-code.16, )",
           "Microsoft.Extensions.ObjectPool": "[8.0.0, )",
           "System.Buffers": "[4.5.1, )",
           "System.Collections.Immutable": "[8.0.0, )"

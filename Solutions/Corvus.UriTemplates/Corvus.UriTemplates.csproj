@@ -22,7 +22,7 @@
 	
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.2.2" />
-		<PackageReference Include="Corvus.HighPerformance" Version="0.2.0-initial-code.16" />
+		<PackageReference Include="Corvus.HighPerformance" Version="0.2.0-initial-code.17" />
 		<PackageReference Include="Endjin.RecommendedPractices.GitHub" Version="2.1.7">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

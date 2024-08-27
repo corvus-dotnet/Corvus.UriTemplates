@@ -54,21 +54,6 @@
           "Microsoft.NETFramework.ReferenceAssemblies.net481": "1.0.3"
         }
       },
-      "Roslynator.Analyzers": {
-        "type": "Direct",
-        "requested": "[4.6.1, )",
-        "resolved": "4.6.1",
-        "contentHash": "SDnYINWUo4n7/OsU2+ygeYexLWZ7KoMIfuNVY4V0S7ANVNHeg9YgEpK7G0zlTJmvWdIuoc0A85zZoyIyRj+Tag=="
-      },
-      "StyleCop.Analyzers": {
-        "type": "Direct",
-        "requested": "[1.2.0-beta.507, )",
-        "resolved": "1.2.0-beta.507",
-        "contentHash": "/FtugDT66cKJJ+GGH7rNpG6UDrT4iIWz45M6lrXXHobDUFDHw+q5VgkbiR+6ffTO564ge7w6fQh/eoQhVdJO8Q==",
-        "dependencies": {
-          "StyleCop.Analyzers.Unstable": "1.2.0.507"
-        }
-      },
       "Tavis.UriTemplates": {
         "type": "Direct",
         "requested": "[2.0.0, )",
@@ -98,8 +83,8 @@
       },
       "Corvus.HighPerformance": {
         "type": "Transitive",
-        "resolved": "0.2.0-initial-code.16",
-        "contentHash": "jvhwxe+1dqXeMLPYz+BhjIt6nzT/wbK5okr1qyX8BKOzdZTcvtiLIuydLi/hRasJpx8ttk69k0GTZxhIQmsc9A==",
+        "resolved": "0.2.0-initial-code.17",
+        "contentHash": "KdeqAZYWmqV6WD36eZzQpLPdT6YaCF3bjjYJcaO9+jMmtOmi0VQKPaNmyenBTZduRkaTH3pub9sNcTmx2hM9qQ==",
         "dependencies": {
           "IndexRange": "1.0.3",
           "System.Buffers": "4.5.1",
@@ -313,11 +298,6 @@
           "System.Memory": "4.5.3"
         }
       },
-      "StyleCop.Analyzers.Unstable": {
-        "type": "Transitive",
-        "resolved": "1.2.0.507",
-        "contentHash": "gTY3IQdRqDJ4hbhSA3e/R48oE8b/OiKfvwkt1QdNVfrJK2gMHBV8ldaHJ885jxWZfllK66soa/sdcjh9bX49Tw=="
-      },
       "System.Buffers": {
         "type": "Transitive",
         "resolved": "4.5.1",
@@ -442,7 +422,7 @@
         "type": "Project",
         "dependencies": {
           "CommunityToolkit.HighPerformance": "[8.2.2, )",
-          "Corvus.HighPerformance": "[0.2.0-initial-code.16, )",
+          "Corvus.HighPerformance": "[0.2.0-initial-code.17, )",
           "IndexRange": "[1.0.3, )",
           "Microsoft.Extensions.ObjectPool": "[8.0.0, )",
           "System.Buffers": "[4.5.1, )",
@@ -557,21 +537,6 @@
           "Microsoft.SourceLink.GitHub": "1.1.1"
         }
       },
-      "Roslynator.Analyzers": {
-        "type": "Direct",
-        "requested": "[4.6.1, )",
-        "resolved": "4.6.1",
-        "contentHash": "SDnYINWUo4n7/OsU2+ygeYexLWZ7KoMIfuNVY4V0S7ANVNHeg9YgEpK7G0zlTJmvWdIuoc0A85zZoyIyRj+Tag=="
-      },
-      "StyleCop.Analyzers": {
-        "type": "Direct",
-        "requested": "[1.2.0-beta.507, )",
-        "resolved": "1.2.0-beta.507",
-        "contentHash": "/FtugDT66cKJJ+GGH7rNpG6UDrT4iIWz45M6lrXXHobDUFDHw+q5VgkbiR+6ffTO564ge7w6fQh/eoQhVdJO8Q==",
-        "dependencies": {
-          "StyleCop.Analyzers.Unstable": "1.2.0.507"
-        }
-      },
       "Tavis.UriTemplates": {
         "type": "Direct",
         "requested": "[2.0.0, )",
@@ -595,8 +560,8 @@
       },
       "Corvus.HighPerformance": {
         "type": "Transitive",
-        "resolved": "0.2.0-initial-code.16",
-        "contentHash": "jvhwxe+1dqXeMLPYz+BhjIt6nzT/wbK5okr1qyX8BKOzdZTcvtiLIuydLi/hRasJpx8ttk69k0GTZxhIQmsc9A==",
+        "resolved": "0.2.0-initial-code.17",
+        "contentHash": "KdeqAZYWmqV6WD36eZzQpLPdT6YaCF3bjjYJcaO9+jMmtOmi0VQKPaNmyenBTZduRkaTH3pub9sNcTmx2hM9qQ==",
         "dependencies": {
           "System.Buffers": "4.5.1",
           "System.Memory": "4.5.5"
@@ -793,11 +758,6 @@
           "System.Memory": "4.5.3"
         }
       },
-      "StyleCop.Analyzers.Unstable": {
-        "type": "Transitive",
-        "resolved": "1.2.0.507",
-        "contentHash": "gTY3IQdRqDJ4hbhSA3e/R48oE8b/OiKfvwkt1QdNVfrJK2gMHBV8ldaHJ885jxWZfllK66soa/sdcjh9bX49Tw=="
-      },
       "System.Buffers": {
         "type": "Transitive",
         "resolved": "4.5.1",
@@ -883,7 +843,7 @@
         "type": "Project",
         "dependencies": {
           "CommunityToolkit.HighPerformance": "[8.2.2, )",
-          "Corvus.HighPerformance": "[0.2.0-initial-code.16, )",
+          "Corvus.HighPerformance": "[0.2.0-initial-code.17, )",
           "Microsoft.Extensions.ObjectPool": "[8.0.0, )",
           "System.Buffers": "[4.5.1, )",
           "System.Collections.Immutable": "[8.0.0, )"

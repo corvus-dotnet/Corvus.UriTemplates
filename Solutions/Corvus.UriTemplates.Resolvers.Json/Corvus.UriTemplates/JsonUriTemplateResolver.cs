@@ -5,7 +5,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
-using Corvus.UriTemplates.Internal;
+using Corvus.HighPerformance;
 
 namespace Corvus.UriTemplates;
 

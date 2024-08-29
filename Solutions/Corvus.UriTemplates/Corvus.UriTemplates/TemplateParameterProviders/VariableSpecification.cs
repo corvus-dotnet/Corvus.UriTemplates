@@ -2,10 +2,7 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-using System.Text;
-
 using Corvus.HighPerformance;
-using Corvus.UriTemplates.Internal;
 
 namespace Corvus.UriTemplates.TemplateParameterProviders;
 
@@ -111,8 +108,8 @@ public ref struct VariableSpecification
     /// <returns>The variable specification as a string.</returns>
     public override string ToString()
     {
-        // TODO: want to use ValueStringBuilder, but we don't yet support appending int
-        StringBuilder builder = StringBuilderPool.Shared.Get();
+        Span<char> initialBuffer = stackalloc char[3 + this.VarName.Length + this.PrefixLength];
+        ValueStringBuilder builder = new(initialBuffer);
         if (this.First)
         {
             builder.Append(this.OperatorInfo.First);
@@ -137,8 +134,12 @@ public ref struct VariableSpecification
             builder.Append(this.PrefixLength);
         }
 
+        // Note that ValueStringBuilder.ToString is destructive: if it had to rent a buffer,
+        // it will be returned to the pool, and even if it didn't the position is reset, and
+        // the builder is essentially empty at this point. The intention is that if we want
+        // ValueBuilder to provide the result as an allocated string, we call ToString as the
+        // very last thing we do with the builder.
         string result = builder.ToString();
-        StringBuilderPool.Shared.Return(builder);
         return result;
     }
 }

@@ -43,7 +43,7 @@ param (
     [string[]] $Tasks = @("."),
 
     [Parameter()]
-    [string] $Configuration = "Debug",
+    [string] $Configuration = "Release",
 
     [Parameter()]
     [string] $BuildRepositoryUri = "",
@@ -61,7 +61,7 @@ param (
     [string] $PackagesDir = "_packages",
 
     [Parameter()]
-    [ValidateSet("minimal","normal","detailed")]
+    [ValidateSet("quiet","minimal","normal","detailed")]
     [string] $LogLevel = "minimal",
 
     [Parameter()]
@@ -71,7 +71,7 @@ param (
     [string] $BuildModulePath,
 
     [Parameter()]
-    [version] $BuildModuleVersion = "1.5.2",
+    [version] $BuildModuleVersion = "1.5.9",
 
     [Parameter()]
     [version] $InvokeBuildModuleVersion = "5.10.3"
@@ -127,7 +127,7 @@ $SkipVersion = $false
 $SkipBuild = $false
 $CleanBuild = $Clean
 $SkipTest = $false
-$SkipTestReport = $true
+$SkipTestReport = $false
 $SkipPackage = $false
 $SkipAnalysis = $false
 
@@ -143,22 +143,9 @@ $NuSpecFilesToPackage = @(
     # "Solutions/MySolution/MyProject/MyProject.nuspec"
 )
 
-#
-# Update to the latest report generator versions
-$ReportGeneratorToolVersion = "5.1.10"
+$CreateGitHubRelease = $true
+$PublishNuGetPackagesAsGitHubReleaseArtefacts = $true
 
-#
-# Specify files to exclude from code coverage
-# This option is for excluding generated code
-# - Use file path or directory path with globbing (e.g dir1/*.cs)
-# - Use single or multiple paths (separated by comma) (e.g. **/dir1/class1.cs,**/dir2/*.cs,**/dir3/**/*.cs)
-#
-$ExcludeFilesFromCodeCoverage = ""
-
-#
-# Temporarily skip the test report
-#
-$SkipTestReport = $true
 
 # Synopsis: Build, Test and Package
 task . FullBuild
@@ -176,21 +163,8 @@ task PreBuild {
     exec { & git submodule update }
 }
 task PostBuild {}
-task PreTest {
-    # .net 7 bug workaround - ref: https://github.com/microsoft/vstest/issues/4014
-    Write-Host "Set temporary ENV vars for MSBuild"
-    $env:CollectCoverage = $EnableCoverage
-    $env:CoverletOutputFormat = "cobertura"
-}
-task PostTest {
-    Get-ChildItem env:/CollectCoverage
-    Get-ChildItem env:/CoverletOutputFormat
-
-    # cleanup .net 7 bug workaround
-    Write-Host "Clean-up temporary ENV vars for MSBuild"
-    Remove-Item env:/CollectCoverage
-    Remove-Item env:/CoverletOutputFormat
-}
+task PreTest {}
+task PostTest {}
 task PreTestReport {}
 task PostTestReport {}
 task PreAnalysis {}

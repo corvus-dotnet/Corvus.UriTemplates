@@ -108,7 +108,17 @@ public ref struct VariableSpecification
     /// <returns>The variable specification as a string.</returns>
     public override string ToString()
     {
-        Span<char> initialBuffer = stackalloc char[3 + this.VarName.Length + this.PrefixLength];
+        int maximumOutputLength = 3 + this.VarName.Length + this.PrefixLength;
+        const int MaximumSupportedOutputLength = 4096;
+        if (maximumOutputLength > MaximumSupportedOutputLength)
+        {
+            // Entire URIs typically shouldn't be longer than this, so something is odd if we exceed this.
+            // This is a safety-oriented policy. If someone turns out to come up with a reasonable
+            // scenario in which they genuinely need more, we can revisit this.
+            throw new InvalidOperationException($"The length of this variable would exceed {MaximumSupportedOutputLength} characters. This is unlikely to be correct, but if this limit is unacceptable to you please file an issue at https://github.com/corvus-dotnet/Corvus.UriTemplates/issues");
+        }
+
+        Span<char> initialBuffer = stackalloc char[maximumOutputLength];
         ValueStringBuilder builder = new(initialBuffer);
         if (this.First)
         {

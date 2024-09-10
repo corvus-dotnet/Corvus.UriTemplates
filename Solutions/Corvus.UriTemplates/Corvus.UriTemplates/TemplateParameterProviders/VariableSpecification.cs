@@ -144,12 +144,6 @@ public ref struct VariableSpecification
             builder.Append(this.PrefixLength);
         }
 
-        // Note that ValueStringBuilder.ToString is destructive: if it had to rent a buffer,
-        // it will be returned to the pool, and even if it didn't the position is reset, and
-        // the builder is essentially empty at this point. The intention is that if we want
-        // ValueBuilder to provide the result as an allocated string, we call ToString as the
-        // very last thing we do with the builder.
-        string result = builder.ToString();
-        return result;
+        return builder.CreateStringAndDispose();
     }
 }

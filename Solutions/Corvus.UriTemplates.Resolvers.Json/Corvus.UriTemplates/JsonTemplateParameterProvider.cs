@@ -4,7 +4,7 @@
 
 using System.Text.Json;
 
-using Corvus.UriTemplates.Internal;
+using Corvus.HighPerformance;
 using Corvus.UriTemplates.TemplateParameterProviders;
 
 namespace Corvus.UriTemplates;
@@ -268,7 +268,10 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
     {
         ValueStringBuilder output = new(span.Length * 2);
         WriteStringValue(ref output, span, state.PrefixLength, state.AllowReserved);
-        result = new(output.RentedChars, output.Length);
+
+        // TODO: why did none of our tests spot that this was erroneously using a length of 0 before?
+        (char[]? rentedBuffer, int length) = output.GetRentedBufferAndLengthAndDispose();
+        result = new(rentedBuffer, length);
 
         // Do not dispose the value string builder, we have borrowed its innards
         return true;
@@ -292,7 +295,9 @@ internal class JsonTemplateParameterProvider : ITemplateParameterProvider<JsonEl
 
         WriteStringValue(ref output, span, state.PrefixLength, state.AllowReserved);
 
-        result = new(output.RentedChars, output.Length);
+        // TODO: why did none of our tests spot that this was erroneously using a length of 0 before?
+        (char[]? rentedBuffer, int length) = output.GetRentedBufferAndLengthAndDispose();
+        result = new(rentedBuffer, length);
         return true;
     }
 

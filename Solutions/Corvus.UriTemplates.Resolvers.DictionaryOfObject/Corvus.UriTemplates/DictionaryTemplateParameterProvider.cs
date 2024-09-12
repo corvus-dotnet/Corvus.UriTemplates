@@ -5,9 +5,7 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
-using CommunityToolkit.HighPerformance;
-
-using Corvus.UriTemplates.Internal;
+using Corvus.HighPerformance;
 using Corvus.UriTemplates.TemplateParameterProviders;
 
 namespace Corvus.UriTemplates;

@@ -474,7 +474,7 @@
         }
       }
     },
-    ".NETFramework,Version=v4.8.1/win7-x86": {
+    ".NETFramework,Version=v4.8.1/win-x86": {
       "Gee.External.Capstone": {
         "type": "Transitive",
         "resolved": "2.3.0",
@@ -908,7 +908,7 @@
         }
       }
     },
-    "net8.0/win7-x86": {
+    "net8.0/win-x86": {
       "Gee.External.Capstone": {
         "type": "Transitive",
         "resolved": "2.3.0",

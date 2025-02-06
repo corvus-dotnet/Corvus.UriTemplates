@@ -31,4 +31,17 @@ public readonly struct ParameterValue(ParameterName name, Range valueRange)
     {
         return uri[this.ValueRange];
     }
+
+    /// <summary>
+    /// Gets the value of the parameter.
+    /// </summary>
+    /// <param name="uri">
+    /// The URI containing this parameter value. This must be the same URI that was used
+    /// to parse the parameter.
+    /// </param>
+    /// <returns>The parameter value.</returns>
+    public ReadOnlyMemory<char> GetValue(ReadOnlyMemory<char> uri)
+    {
+        return uri[this.ValueRange];
+    }
 }

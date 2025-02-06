@@ -9,7 +9,7 @@ branches:
   master:
     regex: ^main
     tag: preview
-    increment: patch
+    increment: Patch
   dependabot-pr:
     regex: ^dependabot
     tag: dependabot
@@ -20,5 +20,5 @@ branches:
     - feature
     - support
     - hotfix
-next-version: "2.2"
+next-version: "2.3"
 

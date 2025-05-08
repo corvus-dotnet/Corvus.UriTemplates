@@ -89,6 +89,10 @@ public static class UriTemplateParserFactory
 
     private static (string EscapedTemplate, IUriTemplatePatternElement[] Elements) CreateParserElements(ReadOnlySpan<char> uriTemplate)
     {
+        // Escape any question marks that are not inside a variable specification.
+        // (We unescape these when we turn them into literal sequences, but we want to
+        // avoid treating them in the same way as question marks that *are* part of
+        // a variable specification.)
         string template = TemplateConversion.Replace(uriTemplate.ToString(), @"$+\?");
         ReadOnlySpan<char> templateSpan = template.AsSpan();
         List<IUriTemplatePatternElement> elements = new();
@@ -99,7 +103,7 @@ public static class UriTemplateParserFactory
             if (match.Index > lastIndex)
             {
                 // There must be a literal sequence in this gap
-                AddLiteral(templateSpan, elements, lastIndex, match);
+                AddLiteral(templateSpan[lastIndex..match.Index], elements);
             }
 
             elements.Add(Match(match));
@@ -109,7 +113,7 @@ public static class UriTemplateParserFactory
         if (lastIndex < templateSpan.Length)
         {
             // There must also be a literal sequence at the end
-            elements.Add(new LiteralSequence(templateSpan[lastIndex..]));
+            AddLiteral(templateSpan[lastIndex..], elements);
         }
 
         return (template, elements.ToArray());
@@ -175,9 +179,8 @@ public static class UriTemplateParserFactory
             }
         }
 
-        static void AddLiteral(ReadOnlySpan<char> templateSpan, List<IUriTemplatePatternElement> elements, int lastIndex, Match match)
+        static void AddLiteral(ReadOnlySpan<char> literal, List<IUriTemplatePatternElement> elements)
         {
-            ReadOnlySpan<char> literal = templateSpan[lastIndex..match.Index];
             Span<char> unescaped = stackalloc char[literal.Length];
             literal.CopyTo(unescaped);
             int written = UnescapeQuestionMarkInPlace(unescaped);
@@ -553,21 +556,44 @@ public static class UriTemplateParserFactory
                         int segmentStart = charsConsumed;
                         int segmentEnd = segmentStart;
 
+                        bool isExploded = escapedTemplateSpan[currentParameterNameRange.End] == '*';
+                        bool? matchesAsTail = null;
+                        int tailConsumed;
+
                         // Now we are looking ahead to the next terminator, or the end of the segment
                         while (segmentEnd < segment.Length)
                         {
 #if NET8_0_OR_GREATER
-                            if (this.terminators.Contains(segment[segmentEnd]))
+                            bool isTerminator = this.terminators.Contains(segment[segmentEnd]);
 #else
-                            if (this.terminators.IndexOf(segment[segmentEnd]) >= 0)
+                            bool isTerminator = this.terminators.IndexOf(segment[segmentEnd]) >= 0;
 #endif
+                            if (isExploded)
                             {
-                                // Break out of the while because we've found the end.
-                                break;
+                                matchesAsTail = tail.MatchesAsTail(
+                                    escapedTemplate, segment[segmentEnd..], out tailConsumed, ref callbackState)
+                                    && (tailConsumed + segmentEnd == segment.Length);
+                                if (matchesAsTail.Value)
+                                {
+                                    // Break out of the while because we've found the end.
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                if (isTerminator)
+                                {
+                                    // Break out of the while because we've found the end.
+                                    break;
+                                }
                             }
 
                             segmentEnd++;
                         }
+
+                        matchesAsTail ??= tail.MatchesAsTail(
+                            escapedTemplate, segment[segmentEnd..], out tailConsumed, ref callbackState)
+                            && (tailConsumed + segmentEnd == segment.Length);
 
                         // Tell the world about this parameter (note that the span for the value could be empty).
                         parameterCallback?.Invoke(false, currentParameterName, segment[segmentStart..segmentEnd], ref callbackState);
@@ -585,7 +611,7 @@ public static class UriTemplateParserFactory
                         }
 
                         // If we match the tail (the remaining segments in the match) we don't want to consume the next one.
-                        if (tail.MatchesAsTail(escapedTemplate, segment[charsConsumed..], out int tailConsumed, ref callbackState) && (tailConsumed + charsConsumed == segment.Length))
+                        if (matchesAsTail.Value)
                         {
                             // The tail matches the rest of the segment, so we will ignore our next parameter.
                             return true;

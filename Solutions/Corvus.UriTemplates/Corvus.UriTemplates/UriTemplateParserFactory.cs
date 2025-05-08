@@ -568,14 +568,24 @@ public static class UriTemplateParserFactory
 #else
                             bool isTerminator = this.terminators.IndexOf(segment[segmentEnd]) >= 0;
 #endif
-
-                            matchesAsTail = tail.MatchesAsTail(
-                                escapedTemplate, segment[segmentEnd..], out tailConsumed, ref callbackState)
-                                && (tailConsumed + segmentEnd == segment.Length);
-                            if (matchesAsTail.Value || (isTerminator && !isExploded))
+                            if (isExploded)
                             {
-                                // Break out of the while because we've found the end.
-                                break;
+                                matchesAsTail = tail.MatchesAsTail(
+                                    escapedTemplate, segment[segmentEnd..], out tailConsumed, ref callbackState)
+                                    && (tailConsumed + segmentEnd == segment.Length);
+                                if (matchesAsTail.Value)
+                                {
+                                    // Break out of the while because we've found the end.
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                if (isTerminator)
+                                {
+                                    // Break out of the while because we've found the end.
+                                    break;
+                                }
                             }
 
                             segmentEnd++;

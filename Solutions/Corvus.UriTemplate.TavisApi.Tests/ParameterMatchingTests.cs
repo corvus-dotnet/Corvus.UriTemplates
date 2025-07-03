@@ -285,7 +285,77 @@ namespace UriTemplateTests
             Assert.Equal("yuck", parameters["bar"]);
             Assert.Equal("yob", parameters["baz"]);
         }
-        
 
+        [Fact]
+        public void ExplodePathParamMatchSingleToEnd()
+        {
+            var uri = new Uri("/foo/yuck", UriKind.RelativeOrAbsolute);
+
+            var template = new UriTemplate("/foo{/bar*}");
+
+            var parameters = template.GetParameters(uri);
+
+            Assert.Equal("yuck", parameters["bar"]);
+        }
+
+        [Fact]
+        public void ExplodePathParamMatchSingleNotToEnd()
+        {
+            var uri = new Uri("/foo/yuck/bob", UriKind.RelativeOrAbsolute);
+
+            var template = new UriTemplate("/foo{/bar*}/bob");
+
+            var parameters = template.GetParameters(uri);
+
+            Assert.Equal("yuck", parameters["bar"]);
+        }
+
+        [Fact]
+        public void ExplodePathParamMatchSingleThenQuery()
+        {
+            var uri = new Uri("/foo/yuck?x=y", UriKind.RelativeOrAbsolute);
+
+            var template = new UriTemplate("/foo{/bar*}?x=y");
+
+            var parameters = template.GetParameters(uri);
+
+            Assert.Equal("yuck", parameters["bar"]);
+        }
+
+        [Fact]
+        public void ExplodePathParamMatchSingleNotToEndWithoutInterveningSlash()
+        {
+            var uri = new Uri("/foo/yuckbob", UriKind.RelativeOrAbsolute);
+
+            var template = new UriTemplate("/foo{/bar*}bob");
+
+            var parameters = template.GetParameters(uri);
+
+            Assert.Equal("yuck", parameters["bar"]);
+        }
+
+        [Fact]
+        public void ExplodePathParamMatchMultipleToEnd()
+        {
+            var uri = new Uri("/foo/yuck/bob", UriKind.RelativeOrAbsolute);
+
+            var template = new UriTemplate("/foo{/bar*}");
+
+            var parameters = template.GetParameters(uri);
+
+            Assert.Equal("yuck/bob", parameters["bar"]);
+        }
+
+        [Fact]
+        public void ExplodePathParamMatchMultipleNotToEnd()
+        {
+            var uri = new Uri("/foo/yuck/yack/bob", UriKind.RelativeOrAbsolute);
+
+            var template = new UriTemplate("/foo{/bar*}/bob");
+
+            var parameters = template.GetParameters(uri);
+
+            Assert.Equal("yuck/yack", parameters["bar"]);
+        }
     }
 }

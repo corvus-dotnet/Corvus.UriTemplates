@@ -23,7 +23,7 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="System.Buffers" Version="4.5.1" />
-		<PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
+		<PackageReference Include="System.Collections.Immutable" Version="10.0.7" />
 		<PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.8" />
 	</ItemGroup>
 
